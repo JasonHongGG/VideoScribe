@@ -1,0 +1,121 @@
+import React, { useRef, useEffect, useState } from "react";
+import { useVideoStore } from "../../store/videoStore";
+import { useSTTStore } from "../../store/sttStore";
+import { VideoControls } from "./VideoControls";
+import { Upload } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+
+export const VideoPlayer: React.FC = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { 
+    videoUrl, 
+    isPlaying, 
+    currentTime, 
+    volume,
+    setVideo,
+    setIsPlaying, 
+    setCurrentTime,
+    setDuration 
+  } = useVideoStore();
+
+  const { results } = useSTTStore();
+  const [currentSubtitle, setCurrentSubtitle] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.play().catch(console.error);
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isPlaying, videoUrl]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  useEffect(() => {
+    if (videoRef.current && Math.abs(videoRef.current.currentTime - currentTime) > 0.1) {
+      videoRef.current.currentTime = currentTime;
+    }
+
+    if (results.length > 0) {
+      const activeSubtitle = results.find(r => currentTime >= r.start && currentTime <= r.end);
+      setCurrentSubtitle(activeSubtitle ? activeSubtitle.text : null);
+    } else {
+      setCurrentSubtitle(null);
+    }
+  }, [currentTime, results]);
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current && isPlaying) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+    }
+  };
+
+  return (
+    <div 
+      ref={containerRef}
+      className="relative w-full h-full flex flex-col bg-black overflow-hidden group"
+    >
+      {videoUrl ? (
+        <>
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            className="w-full h-full object-contain"
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onEnded={() => setIsPlaying(false)}
+            onClick={() => setIsPlaying(!isPlaying)}
+          />
+          
+          <AnimatePresence>
+            {currentSubtitle && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute bottom-28 left-0 w-full flex justify-center pointer-events-none px-12 transition-all z-30"
+              >
+                <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-4xl">
+                  <p className="text-[#facc15] font-medium text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-center leading-relaxed tracking-wide">
+                    {currentSubtitle}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="absolute bottom-0 left-0 w-full transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus-within:opacity-100 z-40 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-20">
+            <VideoControls />
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center bg-transparent">
+          <div className="p-8 rounded-full bg-white/5 mb-6 text-gray-400 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+            <Upload size={48} />
+          </div>
+          <h2 className="text-2xl font-medium mb-3 text-white">
+            Drag & Drop a Video Anywhere
+          </h2>
+          <p className="text-sm text-gray-500 tracking-wider uppercase font-medium">
+            SUPPORTS MP4, WEBM, MKV
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
