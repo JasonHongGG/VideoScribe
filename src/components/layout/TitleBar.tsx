@@ -174,27 +174,30 @@ export const TitleBar: React.FC = () => {
         </Tooltip>
       </div>
 
-      <div className="flex h-full items-center">
-        <div 
-          className="h-full w-12 flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer"
+      <div className="flex items-center pr-4 h-full gap-1 cursor-default" data-tauri-drag-region="false" onMouseDown={(e) => e.stopPropagation()}>
+        <button 
+          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-all outline-none"
           onClick={handleMinimize}
+          aria-label="Minimize"
         >
-          <Minus size={16} className="text-gray-400" />
-        </div>
+          <Minus size={16} />
+        </button>
         
-        <div 
-          className="h-full w-12 flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer"
+        <button 
+          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-all outline-none"
           onClick={handleToggleMaximize}
+          aria-label="Maximize"
         >
-          {isMaximized ? <Square size={14} className="text-gray-400" /> : <Maximize size={14} className="text-gray-400" />}
-        </div>
+          {isMaximized ? <Square size={14} /> : <Maximize size={14} />}
+        </button>
         
-        <div 
-          className="h-full w-12 flex items-center justify-center hover:bg-red-500/90 hover:text-white transition-colors cursor-pointer"
+        <button 
+          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500 hover:text-white text-gray-400 transition-all outline-none ml-1"
           onClick={handleClose}
+          aria-label="Close"
         >
-          <X size={16} className="text-gray-400 hover:text-white" />
-        </div>
+          <X size={16} />
+        </button>
       </div>
     </div>
   );
