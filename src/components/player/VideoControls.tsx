@@ -38,83 +38,109 @@ export const VideoControls: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-3 p-4 px-6 mx-4 mb-6 rounded-2xl bg-[#121212]/80 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-      <div className="flex items-center gap-4" onWheel={handleWheel}>
-        <span className="text-xs font-mono text-gray-300 w-12 text-right drop-shadow-md">
-          {formatTime(currentTime)}
-        </span>
+    <div className="w-full px-8 pb-8 pt-6 flex flex-col gap-5 backdrop-blur-md bg-black/20 border-t border-white/5">
+      {/* Progress Bar */}
+      <div className="flex items-center w-full" onWheel={handleWheel}>
         <Slider.Root
-          className="relative flex items-center select-none touch-none w-full h-5 group"
+          className="relative flex items-center select-none touch-none w-full h-5 group/slider cursor-pointer"
           value={[currentTime]}
           max={duration}
           step={0.01}
           onValueChange={handleTimeChange}
         >
-          <Slider.Track className="bg-white/20 relative grow rounded-full h-[3px] transition-all group-hover:h-1">
-            <Slider.Range className="absolute bg-[#facc15] rounded-full h-full shadow-[0_0_10px_rgba(250,204,21,0.5)]" />
+          <Slider.Track className="bg-white/20 relative grow h-1 rounded-full transition-all duration-300 group-hover/slider:h-1.5 overflow-hidden">
+            <Slider.Range className="absolute bg-[#facc15] h-full" />
           </Slider.Track>
           <Slider.Thumb 
-            className="block w-4 h-4 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.5)] rounded-full hover:bg-[#facc15] focus:outline-none transition-transform scale-0 group-hover:scale-100 cursor-pointer border-2 border-[#121212]" 
+            className="block w-4 h-4 bg-[#facc15] shadow-[0_0_15px_rgba(250,204,21,0.6)] rounded-full opacity-0 group-hover/slider:opacity-100 transition-all duration-200 focus:outline-none cursor-pointer scale-50 group-hover/slider:scale-100" 
             aria-label="Progress" 
           />
         </Slider.Root>
-        <span className="text-xs font-mono text-gray-300 w-12 drop-shadow-md">
-          {formatTime(duration)}
-        </span>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
-            <button onClick={() => skipFrame(-1)} className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-md hover:bg-white/10" title="Previous Frame">
-              <SkipBack size={16} />
-            </button>
-            <div className="w-px h-3 bg-white/10 mx-1"></div>
-            <button onClick={() => skipTime(-1)} className="px-2 py-1 text-[10px] font-bold tracking-wider text-gray-400 hover:text-[#facc15] transition-colors rounded-md hover:bg-white/10" title="-1 Second">
-              -1S
-            </button>
-          </div>
-
-          <button 
-            onClick={handlePlayPause}
-            className="w-12 h-12 flex items-center justify-center bg-[#facc15] text-black rounded-full hover:bg-white hover:scale-105 transition-all active:scale-95 shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)]"
-          >
-            {isPlaying ? <Pause size={22} className="fill-current" /> : <Play size={22} className="fill-current ml-1" />}
-          </button>
-
-          <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
-            <button onClick={() => skipTime(1)} className="px-2 py-1 text-[10px] font-bold tracking-wider text-gray-400 hover:text-[#facc15] transition-colors rounded-md hover:bg-white/10" title="+1 Second">
-              +1S
-            </button>
-            <div className="w-px h-3 bg-white/10 mx-1"></div>
-            <button onClick={() => skipFrame(1)} className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-md hover:bg-white/10" title="Next Frame">
-              <SkipForward size={16} />
-            </button>
+      {/* Controls Container */}
+      <div className="flex items-center justify-between w-full">
+        {/* Left: Time Display */}
+        <div className="w-1/3 flex justify-start">
+          <div className="flex items-center gap-1.5 text-sm font-mono tracking-wide drop-shadow-md select-none">
+            <span className="text-white font-medium">{formatTime(currentTime)}</span>
+            <span className="text-white/40">/</span>
+            <span className="text-white/60">{formatTime(duration)}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-28 group/vol bg-white/5 px-3 py-2 rounded-lg border border-white/5">
+        {/* Center: Playback Controls */}
+        <div className="w-1/3 flex items-center justify-center gap-6">
           <button 
-            onClick={() => setVolume(volume === 0 ? 1 : 0)}
-            className="text-gray-400 hover:text-[#facc15] transition-colors"
+            onClick={() => skipFrame(-1)} 
+            className="text-white/50 hover:text-white transition-all duration-200 hover:-translate-x-0.5 active:scale-95" 
+            title="Previous Frame"
           >
-            {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            <SkipBack size={20} />
           </button>
-          <Slider.Root
-            className="relative flex items-center select-none touch-none w-full h-4"
-            value={[volume]}
-            max={1}
-            step={0.05}
-            onValueChange={handleVolumeChange}
+          
+          <button 
+            onClick={() => skipTime(-1)} 
+            className="text-white/50 hover:text-white transition-all duration-200 font-bold text-[11px] tracking-widest hover:-translate-x-0.5 active:scale-95" 
+            title="-1 Second"
           >
-            <Slider.Track className="bg-white/20 relative grow rounded-full h-[3px]">
-              <Slider.Range className="absolute bg-[#facc15] rounded-full h-full shadow-[0_0_8px_rgba(250,204,21,0.5)] transition-colors" />
-            </Slider.Track>
-            <Slider.Thumb className="block w-3 h-3 bg-white shadow-md rounded-full scale-0 group-hover/vol:scale-100 transition-transform cursor-pointer" />
-          </Slider.Root>
+            -1S
+          </button>
+          
+          <button 
+            onClick={handlePlayPause}
+            className="w-14 h-14 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-full transition-all duration-300 hover:scale-105 active:scale-95 border border-white/10 hover:border-white/20 shadow-lg hover:shadow-[0_0_25px_rgba(255,255,255,0.15)] group/play"
+          >
+            {isPlaying ? (
+              <Pause size={24} className="fill-current text-white transition-transform group-hover/play:scale-110" />
+            ) : (
+              <Play size={24} className="fill-current ml-1 text-white transition-transform group-hover/play:scale-110" />
+            )}
+          </button>
+          
+          <button 
+            onClick={() => skipTime(1)} 
+            className="text-white/50 hover:text-white transition-all duration-200 font-bold text-[11px] tracking-widest hover:translate-x-0.5 active:scale-95" 
+            title="+1 Second"
+          >
+            +1S
+          </button>
+          
+          <button 
+            onClick={() => skipFrame(1)} 
+            className="text-white/50 hover:text-white transition-all duration-200 hover:translate-x-0.5 active:scale-95" 
+            title="Next Frame"
+          >
+            <SkipForward size={20} />
+          </button>
+        </div>
+
+        {/* Right: Volume Control */}
+        <div className="w-1/3 flex justify-end">
+          <div className="flex items-center gap-3 w-32 group/vol hover:w-36 transition-all duration-300">
+            <button 
+              onClick={() => setVolume(volume === 0 ? 1 : 0)}
+              className="text-white/50 hover:text-white transition-colors duration-200"
+            >
+              {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+            <Slider.Root
+              className="relative flex items-center select-none touch-none w-full h-4 cursor-pointer"
+              value={[volume]}
+              max={1}
+              step={0.05}
+              onValueChange={handleVolumeChange}
+            >
+              <Slider.Track className="bg-white/20 relative grow h-1 rounded-full overflow-hidden transition-all group-hover/vol:h-1.5">
+                <Slider.Range className="absolute bg-white/80 h-full" />
+              </Slider.Track>
+              <Slider.Thumb className="block w-3 h-3 bg-white shadow-md rounded-full opacity-0 scale-50 group-hover/vol:opacity-100 group-hover/vol:scale-100 transition-all duration-200 focus:outline-none" />
+            </Slider.Root>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
 
