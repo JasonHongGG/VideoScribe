@@ -10,9 +10,9 @@ function App() {
       <TitleBar />
       <Notify />
       <Dropzone />
-      
+
       {/* Main Content Area - padded top to account for absolute TitleBar */}
-      <div className="flex flex-1 w-full h-full pt-[48px] overflow-hidden relative rounded-lg bg-black/40 shadow-2xl ring-1 ring-white/10">
+      <div className="flex flex-1 w-full h-full pt-[48px] overflow-hidden relative rounded-lg bg-[#0f0f0f] shadow-2xl ring-1 ring-white/10">
         <main className="flex-1 relative overflow-hidden bg-black/60 flex">
           <div className="w-full h-full flex">
             <VideoPlayer />
