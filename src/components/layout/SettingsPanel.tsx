@@ -1,9 +1,27 @@
-import React from "react";
-import { ChevronDown } from "lucide-react";
+import React, { useState } from "react";
+import { Select } from "../ui/Select";
+
+const MODEL_OPTIONS = [
+  { value: "tiny", label: "Tiny (Fastest, least accurate)" },
+  { value: "base", label: "Base" },
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium (Balanced)" },
+  { value: "large-v3", label: "Large V3 (Slowest, most accurate)" },
+];
+
+const LANGUAGE_OPTIONS = [
+  { value: "auto", label: "Auto Detect" },
+  { value: "en", label: "English" },
+  { value: "ja", label: "Japanese" },
+  { value: "zh", label: "Chinese" },
+];
 
 export const SettingsPanel: React.FC = () => {
+  const [model, setModel] = useState("medium");
+  const [language, setLanguage] = useState("auto");
+
   return (
-    <div className="w-full h-full p-8 pt-16 text-white overflow-y-auto custom-scrollbar bg-gradient-to-br from-[#121212]/90 to-black backdrop-blur-md">
+    <div className="w-full h-full p-8 pt-6 text-white overflow-y-auto custom-scrollbar bg-gradient-to-br from-[#121212]/90 to-black backdrop-blur-md">
       <div className="max-w-2xl mx-auto">
         <h2 className="text-3xl font-bold mb-8 text-white tracking-tight flex items-center gap-3">
           <span className="w-2 h-8 bg-[#facc15] rounded-full shadow-[0_0_15px_rgba(250,204,21,0.6)]"></span>
@@ -18,32 +36,23 @@ export const SettingsPanel: React.FC = () => {
               Speech-to-Text Engine
             </h3>
             
-            <div className="flex flex-col gap-3 relative z-10">
+            <div className="flex flex-col gap-3 relative z-20">
               <label className="text-sm text-gray-400 font-bold tracking-wider uppercase">Model Size</label>
-              <div className="relative">
-                <select className="w-full bg-black/60 border border-white/10 rounded-xl px-5 py-3.5 text-white focus:outline-none focus:border-[#facc15] focus:ring-1 focus:ring-[#facc15]/50 transition-all cursor-pointer appearance-none hover:bg-black/80 font-medium">
-                  <option value="tiny">Tiny (Fastest, least accurate)</option>
-                  <option value="base">Base</option>
-                  <option value="small">Small</option>
-                  <option value="medium">Medium (Balanced)</option>
-                  <option value="large-v3">Large V3 (Slowest, most accurate)</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
-              </div>
+              <Select 
+                options={MODEL_OPTIONS}
+                value={model}
+                onChange={setModel}
+              />
               <p className="text-xs text-gray-500 leading-relaxed pl-1">Larger models require more RAM and take longer to process, but yield significantly better results.</p>
             </div>
 
             <div className="flex flex-col gap-3 pt-4 relative z-10">
               <label className="text-sm text-gray-400 font-bold tracking-wider uppercase">Language Detection</label>
-              <div className="relative">
-                <select className="w-full bg-black/60 border border-white/10 rounded-xl px-5 py-3.5 text-white focus:outline-none focus:border-[#facc15] focus:ring-1 focus:ring-[#facc15]/50 transition-all cursor-pointer appearance-none hover:bg-black/80 font-medium">
-                  <option value="auto">Auto Detect</option>
-                  <option value="en">English</option>
-                  <option value="ja">Japanese</option>
-                  <option value="zh">Chinese</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
-              </div>
+              <Select 
+                options={LANGUAGE_OPTIONS}
+                value={language}
+                onChange={setLanguage}
+              />
               <p className="text-xs text-gray-500 leading-relaxed pl-1">Manually setting the language can improve accuracy if auto-detect fails or struggles with accents.</p>
             </div>
           </section>

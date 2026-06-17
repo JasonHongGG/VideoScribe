@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { WebviewWindow, getAllWebviewWindows } from "@tauri-apps/api/webviewWindow";
 import { Minus, Square, X, Maximize, FileVideo, Command, Settings, PanelRightOpen, PanelRightClose } from "lucide-react";
 import { Tooltip } from "../ui/Tooltip";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useVideoStore } from "../../store/videoStore";
 import { useSTTStore } from "../../store/sttStore";
 import { useNotifyStore } from "../../store/notifyStore";
-import { useAppStore } from "../../store/appStore";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { STTService } from "../../services/sttService";
 
@@ -17,7 +17,6 @@ export const TitleBar: React.FC = () => {
   const { videoUrl, setVideo } = useVideoStore();
   const { isPanelOpen, togglePanel, status, setPanelOpen } = useSTTStore();
   const { show } = useNotifyStore();
-  const { activeView, setActiveView } = useAppStore();
 
   useEffect(() => {
     const checkMaximized = async () => {
@@ -54,7 +53,6 @@ export const TitleBar: React.FC = () => {
         const file = new File([], fileName);
         setVideo(file, url, selected);
         show("Video loaded successfully", "success");
-        setActiveView("player");
       }
     } catch (error) {
       console.error("Failed to open video", error);
@@ -75,11 +73,41 @@ export const TitleBar: React.FC = () => {
       return;
     }
 
-    setActiveView("player");
     setPanelOpen(true);
     
     // Delegate complex STT flow to STTService
     STTService.startSTT(path, "medium");
+  };
+
+  const handleOpenSettings = async () => {
+    try {
+      const windows = await getAllWebviewWindows();
+      const existingWindow = windows.find(w => w.label === "settings");
+      
+      if (existingWindow) {
+        await existingWindow.setFocus();
+      } else {
+        const webview = new WebviewWindow("settings", {
+          url: "/#/settings",
+          title: "Settings",
+          width: 800,
+          height: 600,
+          decorations: false,
+          transparent: true,
+          resizable: true,
+          minWidth: 600,
+          minHeight: 400
+        });
+
+        webview.once('tauri://error', function (e) {
+          console.error("Error creating settings window", e);
+          show("Failed to open settings window. Check permissions.", "error");
+        });
+      }
+    } catch (e) {
+      console.error("Failed to check windows or create window", e);
+      show("Failed to open settings window.", "error");
+    }
   };
 
   return (
@@ -95,7 +123,7 @@ export const TitleBar: React.FC = () => {
         <Tooltip content="Open Video" position="bottom">
           <button 
             onClick={handleOpenVideo}
-            className={`p-2 rounded-lg transition-all group flex items-center gap-2 ${activeView === "player" && videoUrl ? "text-[#facc15] bg-white/5" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
+            className={`p-2 rounded-lg transition-all group flex items-center gap-2 ${videoUrl ? "text-[#facc15] bg-white/5" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
           >
             <FileVideo size={18} className="group-hover:scale-110 transition-transform" />
             <span className="text-xs font-medium tracking-wide">Open</span>
@@ -138,8 +166,8 @@ export const TitleBar: React.FC = () => {
 
         <Tooltip content="Settings" position="bottom">
           <button 
-            onClick={() => setActiveView(activeView === "settings" ? "player" : "settings")}
-            className={`p-2 rounded-lg transition-all group mr-2 ${activeView === "settings" ? "text-[#facc15] bg-white/5" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
+            onClick={handleOpenSettings}
+            className="p-2 rounded-lg transition-all group mr-2 text-gray-400 hover:text-white hover:bg-white/10"
           >
             <Settings size={18} className="group-hover:rotate-45 transition-transform duration-300" />
           </button>

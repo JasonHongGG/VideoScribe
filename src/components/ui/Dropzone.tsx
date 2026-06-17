@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud } from 'lucide-react';
 import { useVideoStore } from '../../store/videoStore';
-import { useAppStore } from '../../store/appStore';
 
 export function Dropzone() {
     const [isDragging, setIsDragging] = useState(false);
     const { setVideo } = useVideoStore();
-    const { setActiveView } = useAppStore();
 
     useEffect(() => {
         let unlisten: (() => void) | undefined;
@@ -35,7 +33,6 @@ export function Dropzone() {
                                 const fileName = path.split('\\').pop() || path.split('/').pop() || "video";
                                 const mockFile = new File([], fileName);
                                 setVideo(mockFile, url, path);
-                                setActiveView("player");
                             }
                         }
                     } else {
@@ -59,7 +56,7 @@ export function Dropzone() {
             isMounted = false;
             if (unlisten) unlisten();
         };
-    }, [setVideo, setActiveView]);
+    }, [setVideo]);
 
     return (
         <AnimatePresence>
