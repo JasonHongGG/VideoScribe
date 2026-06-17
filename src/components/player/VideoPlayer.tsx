@@ -56,13 +56,14 @@ export const VideoPlayer: React.FC = () => {
     if (memoizedResults.length > 0) {
       // Opt: A linear scan here is okay for now as results length is usually < 1000
       const activeSubtitle = memoizedResults.find(r => currentTime >= r.start && currentTime <= r.end);
-      setCurrentSubtitle(activeSubtitle ? activeSubtitle.text : null);
     } else {
       setCurrentSubtitle(null);
     }
   }, [currentTime, memoizedResults]);
 
   const lastSyncTime = useRef(0);
+  const scrubTargetTime = useRef<number | null>(null);
+  const scrubAnimationFrame = useRef<number | null>(null);
 
   // 3. Handle global hotkeys for smooth frame-by-frame scrubbing directly on the DOM
   useEffect(() => {
@@ -70,32 +71,48 @@ export const VideoPlayer: React.FC = () => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (!videoRef.current) return;
 
-      if (e.key === ',' || e.key === '<') {
-        const newTime = Math.max(0, videoRef.current.currentTime - 1 / 30);
-        videoRef.current.currentTime = newTime;
-        
-        // Throttle React state updates to 10fps (every 100ms) during rapid scrubbing
-        const now = performance.now();
-        if (now - lastSyncTime.current > 100) {
-          setCurrentTime(newTime);
-          lastSyncTime.current = now;
+      if (e.key === ',' || e.key === '<' || e.key === '.' || e.key === '>') {
+        // Automatically pause video when scrubbing frame-by-frame
+        if (isPlaying) {
+          setIsPlaying(false);
         }
-      } else if (e.key === '.' || e.key === '>') {
-        const newTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 1 / 30);
-        videoRef.current.currentTime = newTime;
-        
-        const now = performance.now();
-        if (now - lastSyncTime.current > 100) {
-          setCurrentTime(newTime);
-          lastSyncTime.current = now;
+
+        if (scrubTargetTime.current === null) {
+          scrubTargetTime.current = videoRef.current.currentTime;
+        }
+
+        if (e.key === ',' || e.key === '<') {
+          scrubTargetTime.current = Math.max(0, scrubTargetTime.current - 1 / 30);
+        } else {
+          scrubTargetTime.current = Math.min(videoRef.current.duration, scrubTargetTime.current + 1 / 30);
+        }
+
+        if (scrubAnimationFrame.current === null) {
+          scrubAnimationFrame.current = requestAnimationFrame(() => {
+            if (videoRef.current && scrubTargetTime.current !== null) {
+              videoRef.current.currentTime = scrubTargetTime.current;
+              
+              const now = performance.now();
+              if (now - lastSyncTime.current > 100) {
+                setCurrentTime(scrubTargetTime.current);
+                lastSyncTime.current = now;
+              }
+            }
+            scrubAnimationFrame.current = null;
+          });
         }
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === ',' || e.key === '<' || e.key === '.' || e.key === '>') {
+        scrubTargetTime.current = null;
+        if (scrubAnimationFrame.current !== null) {
+          cancelAnimationFrame(scrubAnimationFrame.current);
+          scrubAnimationFrame.current = null;
+        }
         if (videoRef.current) {
-          setCurrentTime(videoRef.current.currentTime); // Perfect sync on release
+          setCurrentTime(videoRef.current.currentTime);
         }
       }
     };
@@ -106,7 +123,7 @@ export const VideoPlayer: React.FC = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [setCurrentTime]);
+  }, [isPlaying, setIsPlaying, setCurrentTime]);
 
   const handleTimeUpdate = () => {
     if (videoRef.current && isPlaying) {
