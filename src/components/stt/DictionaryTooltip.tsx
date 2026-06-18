@@ -72,17 +72,18 @@ export const DictionaryTooltip: React.FC<Props> = ({ text, x, y, onClose, onMous
 
   return (
     <div
-      className="fixed z-[99999]"
+      className="fixed z-[99999] pointer-events-none"
       style={{
         left: Math.min(x, window.innerWidth - 340), // Keep it within screen bounds horizontally
-        bottom: window.innerHeight - y, // Start exactly at cursor
+        bottom: window.innerHeight - y + 15, // Start 15px above cursor to prevent overlapping the current line
       }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave || onClose}
     >
-      <div className="pb-8"> {/* 32px gap for mouse to travel */}
-        <div className="bg-black/40 backdrop-blur-md border border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] rounded-2xl p-4 w-[320px] pointer-events-auto overflow-hidden">
-          {loading ? (
+      <div 
+        className="bg-black/40 backdrop-blur-md border border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] rounded-2xl p-4 w-[320px] pointer-events-auto overflow-hidden"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave || onClose}
+      >
+        {loading ? (
             <div className="flex items-center justify-center py-4">
               <div className="w-5 h-5 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
@@ -128,7 +129,6 @@ export const DictionaryTooltip: React.FC<Props> = ({ text, x, y, onClose, onMous
             </div>
           </div>
         )}
-        </div>
       </div>
     </div>
   );
