@@ -27,4 +27,5 @@ tauri-plugin-shell = "2"
 rusqlite = { version = "0.31.0", features = ["bundled"] }
 lindera = { version = "3.0.7", features = ["embed-ipadic"] }
 tauri-plugin-fs = "2.5.1"
+tauri-plugin-http = "2"
 

@@ -1,5 +1,6 @@
 import { AIProvider } from './AIProvider';
 import { GenerateRequest, GenerateResponse } from '../types';
+import { fetch } from '@tauri-apps/plugin-http';
 
 export class VertexAIProvider implements AIProvider {
   public readonly name = 'VertexAI';
@@ -12,7 +13,8 @@ export class VertexAIProvider implements AIProvider {
   ) {}
 
   async generate(request: GenerateRequest): Promise<GenerateResponse> {
-    const url = `https://${this.region}-aiplatform.googleapis.com/v1/projects/${this.projectId}/locations/${this.region}/publishers/google/models/${this.model}:generateContent`;
+    const baseUrl = this.region === 'global' ? 'aiplatform.googleapis.com' : `${this.region}-aiplatform.googleapis.com`;
+    const url = `https://${baseUrl}/v1/projects/${this.projectId}/locations/${this.region}/publishers/google/models/${this.model}:generateContent`;
 
     const payload: any = {
       contents: [
@@ -47,7 +49,7 @@ export class VertexAIProvider implements AIProvider {
       throw new Error(`Vertex AI API error: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     
     // Extract text from the first candidate
     const candidate = data.candidates?.[0];

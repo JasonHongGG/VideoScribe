@@ -1,5 +1,6 @@
 import { AIProvider } from './AIProvider';
 import { GenerateRequest, GenerateResponse } from '../types';
+import { fetch } from '@tauri-apps/plugin-http';
 
 export class OllamaProvider implements AIProvider {
   public readonly name = 'ollama';
@@ -25,17 +26,16 @@ export class OllamaProvider implements AIProvider {
       const response = await fetch(this.endpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Ollama API error (${response.status}): ${errorText}`);
-      }
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+    }
 
-      const data = await response.json();
+    const data = await response.json() as any;
 
       return {
         text: data.response,
