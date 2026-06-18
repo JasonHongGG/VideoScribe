@@ -81,7 +81,7 @@ export const DictionaryTooltip: React.FC<Props> = ({ text, x, y, onClose, onMous
       onMouseLeave={onMouseLeave || onClose}
     >
       <div className="pb-8"> {/* 32px gap for mouse to travel */}
-        <div className="bg-slate-900/95 backdrop-blur-xl border border-yellow-500/20 rounded-2xl shadow-2xl p-4 w-[320px] pointer-events-auto overflow-hidden">
+        <div className="bg-[#0a0a0a]/95 backdrop-blur-xl border border-yellow-500/20 rounded-2xl shadow-2xl p-4 w-[320px] pointer-events-auto overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-4">
               <div className="w-5 h-5 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>

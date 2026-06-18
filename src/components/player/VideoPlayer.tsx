@@ -29,7 +29,7 @@ export const VideoPlayer: React.FC = () => {
   const { results, language } = useSTTStore();
   const [currentSubtitle, setCurrentSubtitle] = useState<string | null>(null);
   
-  const [hoverText, setHoverText] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [hoverText, setHoverText] = useState<{ text: string; x: number; y: number; startIndex: number } | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
 
   const [videoLayout, setVideoLayout] = useState({
@@ -313,14 +313,19 @@ export const VideoPlayer: React.FC = () => {
                         Array.from(currentSubtitle).map((char, i) => (
                           <span
                             key={i}
-                            className="hover:text-yellow-400 hover:bg-white/10 rounded px-px cursor-pointer transition-colors"
+                            className={`rounded px-px cursor-pointer transition-colors ${
+                              hoverText?.startIndex === i 
+                                ? "text-yellow-400 bg-yellow-500/20" 
+                                : "hover:text-yellow-400 hover:bg-white/10"
+                            }`}
                             onMouseEnter={(e) => {
                               if (hoverTimeoutRef.current) window.clearTimeout(hoverTimeoutRef.current);
                               const textToLookup = Array.from(currentSubtitle).slice(i, i + 15).join('');
                               setHoverText({
                                 text: textToLookup,
                                 x: e.clientX,
-                                y: e.clientY
+                                y: e.clientY,
+                                startIndex: i
                               });
                             }}
                           >
