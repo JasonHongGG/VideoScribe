@@ -13,7 +13,7 @@
     "windows": [
       {
         "title": "VideoScribe",
-        "width": 1280,
+        "width": 1200,
         "height": 800,
         "decorations": false,
         "transparent": true,
@@ -26,7 +26,9 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       }
     }
   },

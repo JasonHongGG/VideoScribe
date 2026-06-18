@@ -35,7 +35,7 @@ export const VideoControls: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex flex-col bg-[#080808] border-t border-white/5 select-none pt-2.5 pb-3.5 px-6 gap-2.5">
+    <div className="w-full h-[72px] flex flex-col justify-center bg-[#080808] border-t border-white/5 select-none px-6 gap-2">
       
       {/* Top Row: Progress Bar */}
       <div className="w-full flex items-center h-4" onWheel={handleWheel}>
