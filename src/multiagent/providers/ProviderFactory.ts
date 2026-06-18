@@ -1,5 +1,6 @@
 import { AIProvider } from './AIProvider';
 import { OllamaProvider } from './OllamaProvider';
+import { VertexAIProvider } from './VertexAIProvider';
 
 export class ProviderFactory {
   static createProvider(agentName: string): AIProvider {
@@ -25,6 +26,17 @@ export class ProviderFactory {
           throw new Error('Configuration Error: Missing VITE_PROVIDER_OLLAMA_URL in .env');
         }
         return new OllamaProvider(model, url);
+      }
+      case 'vertex': {
+        const projectId = import.meta.env.VITE_PROVIDER_VERTEX_PROJECT_ID;
+        const region = import.meta.env.VITE_PROVIDER_VERTEX_REGION;
+        const accessToken = import.meta.env.VITE_PROVIDER_VERTEX_ACCESS_TOKEN;
+
+        if (!projectId) throw new Error('Configuration Error: Missing VITE_PROVIDER_VERTEX_PROJECT_ID in .env');
+        if (!region) throw new Error('Configuration Error: Missing VITE_PROVIDER_VERTEX_REGION in .env');
+        if (!accessToken) throw new Error('Configuration Error: Missing VITE_PROVIDER_VERTEX_ACCESS_TOKEN in .env');
+
+        return new VertexAIProvider(model, projectId, region, accessToken);
       }
       
       // Future providers can be added here
