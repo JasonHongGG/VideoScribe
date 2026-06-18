@@ -35,9 +35,44 @@ export const VideoControls: React.FC = () => {
   };
 
   return (
-    <div className="w-full px-8 pb-8 pt-6 flex flex-col gap-5 backdrop-blur-md bg-black/20 border-t border-white/5">
+    <div className="w-full h-12 px-5 flex items-center gap-4 bg-[#080808] border-t border-white/5 select-none">
+      
+      {/* Play / Pause */}
+      <button 
+        onClick={handlePlayPause}
+        className="text-white/80 hover:text-[#facc15] transition-colors flex items-center justify-center focus:outline-none"
+        title={isPlaying ? "Pause" : "Play"}
+      >
+        {isPlaying ? (
+          <Pause size={18} className="fill-current" />
+        ) : (
+          <Play size={18} className="fill-current ml-0.5" />
+        )}
+      </button>
+
+      {/* Skips */}
+      <div className="flex items-center gap-1 text-white/40">
+        <button onClick={() => skipTime(-5)} className="hover:text-white transition-colors p-1" title="-5s">
+          <ChevronsLeft size={16} />
+        </button>
+        <button onClick={() => skipTime(-1)} className="hover:text-white transition-colors p-1" title="-1s">
+          <ChevronLeft size={16} />
+        </button>
+        <button onClick={() => skipTime(1)} className="hover:text-white transition-colors p-1" title="+1s">
+          <ChevronRight size={16} />
+        </button>
+        <button onClick={() => skipTime(5)} className="hover:text-white transition-colors p-1" title="+5s">
+          <ChevronsRight size={16} />
+        </button>
+      </div>
+
+      {/* Time */}
+      <div className="text-[11px] font-mono tracking-widest text-white/30 min-w-[90px] text-center pointer-events-none">
+        <span className="text-white/80 font-medium">{formatTime(currentTime)}</span> / {formatTime(duration)}
+      </div>
+
       {/* Progress Bar */}
-      <div className="flex items-center w-full" onWheel={handleWheel}>
+      <div className="flex-1 flex items-center h-full px-2" onWheel={handleWheel}>
         <Slider.Root
           className="relative flex items-center select-none touch-none w-full h-5 group/slider cursor-pointer"
           value={[currentTime]}
@@ -45,99 +80,37 @@ export const VideoControls: React.FC = () => {
           step={0.01}
           onValueChange={handleTimeChange}
         >
-          <Slider.Track className="bg-white/20 relative grow h-1 rounded-full transition-all duration-300 group-hover/slider:h-1.5 overflow-hidden">
+          <Slider.Track className="bg-white/10 relative grow h-[3px] rounded-full transition-all duration-300 group-hover/slider:h-[5px] overflow-hidden">
             <Slider.Range className="absolute bg-[#facc15] h-full" />
           </Slider.Track>
           <Slider.Thumb 
-            className="block w-4 h-4 bg-[#facc15] shadow-[0_0_15px_rgba(250,204,21,0.6)] rounded-full opacity-0 group-hover/slider:opacity-100 transition-all duration-200 focus:outline-none cursor-pointer scale-50 group-hover/slider:scale-100" 
+            className="block w-2.5 h-2.5 bg-[#facc15] shadow-[0_0_8px_rgba(250,204,21,0.5)] rounded-full opacity-0 group-hover/slider:opacity-100 transition-all duration-200 focus:outline-none cursor-pointer scale-50 group-hover/slider:scale-100" 
             aria-label="Progress" 
           />
         </Slider.Root>
       </div>
 
-      {/* Controls Container */}
-      <div className="flex items-center justify-between w-full">
-        {/* Left: Time Display */}
-        <div className="w-1/3 flex justify-start">
-          <div className="flex items-center gap-1.5 text-sm font-mono tracking-wide drop-shadow-md select-none">
-            <span className="text-white font-medium">{formatTime(currentTime)}</span>
-            <span className="text-white/40">/</span>
-            <span className="text-white/60">{formatTime(duration)}</span>
-          </div>
-        </div>
-
-        {/* Center: Playback Controls */}
-        <div className="w-1/3 flex items-center justify-center gap-4">
-          <button 
-            onClick={() => skipTime(-5)} 
-            className="text-white/50 hover:text-white transition-all duration-200 hover:-translate-x-0.5 active:scale-95" 
-            title="-5 Seconds"
-          >
-            <ChevronsLeft size={22} />
-          </button>
-          
-          <button 
-            onClick={() => skipTime(-1)} 
-            className="text-white/50 hover:text-white transition-all duration-200 hover:-translate-x-0.5 active:scale-95" 
-            title="-1 Second"
-          >
-            <ChevronLeft size={22} />
-          </button>
-          
-          <button 
-            onClick={handlePlayPause}
-            className="w-14 h-14 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-full transition-all duration-300 hover:scale-105 active:scale-95 border border-white/10 hover:border-white/20 shadow-lg hover:shadow-[0_0_25px_rgba(255,255,255,0.15)] group/play mx-2"
-          >
-            {isPlaying ? (
-              <Pause size={24} className="fill-current text-white transition-transform group-hover/play:scale-110" />
-            ) : (
-              <Play size={24} className="fill-current ml-1 text-white transition-transform group-hover/play:scale-110" />
-            )}
-          </button>
-          
-          <button 
-            onClick={() => skipTime(1)} 
-            className="text-white/50 hover:text-white transition-all duration-200 hover:translate-x-0.5 active:scale-95" 
-            title="+1 Second"
-          >
-            <ChevronRight size={22} />
-          </button>
-          
-          <button 
-            onClick={() => skipTime(5)} 
-            className="text-white/50 hover:text-white transition-all duration-200 hover:translate-x-0.5 active:scale-95" 
-            title="+5 Seconds"
-          >
-            <ChevronsRight size={22} />
-          </button>
-        </div>
-
-        {/* Right: Volume Control */}
-        <div className="w-1/3 flex justify-end">
-          <div className="flex items-center gap-3 w-32 group/vol hover:w-36 transition-all duration-300">
-            <button 
-              onClick={() => setVolume(volume === 0 ? 1 : 0)}
-              className="text-white/50 hover:text-white transition-colors duration-200"
-            >
-              {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
-            </button>
-            <Slider.Root
-              className="relative flex items-center select-none touch-none w-full h-4 cursor-pointer"
-              value={[volume]}
-              max={1}
-              step={0.05}
-              onValueChange={handleVolumeChange}
-            >
-              <Slider.Track className="bg-white/20 relative grow h-1 rounded-full overflow-hidden transition-all group-hover/vol:h-1.5">
-                <Slider.Range className="absolute bg-white/80 h-full" />
-              </Slider.Track>
-              <Slider.Thumb className="block w-3 h-3 bg-white shadow-md rounded-full opacity-0 scale-50 group-hover/vol:opacity-100 group-hover/vol:scale-100 transition-all duration-200 focus:outline-none" />
-            </Slider.Root>
-          </div>
-        </div>
+      {/* Volume Control */}
+      <div className="flex items-center gap-2 w-24 group/vol">
+        <button 
+          onClick={() => setVolume(volume === 0 ? 1 : 0)}
+          className="text-white/40 hover:text-white transition-colors focus:outline-none p-1"
+        >
+          {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
+        </button>
+        <Slider.Root
+          className="relative flex items-center select-none touch-none w-full h-5 cursor-pointer"
+          value={[volume]}
+          max={1}
+          step={0.05}
+          onValueChange={handleVolumeChange}
+        >
+          <Slider.Track className="bg-white/10 relative grow h-[3px] rounded-full overflow-hidden transition-all group-hover/vol:h-[5px]">
+            <Slider.Range className="absolute bg-white/60 h-full" />
+          </Slider.Track>
+          <Slider.Thumb className="block w-2.5 h-2.5 bg-white shadow-md rounded-full opacity-0 scale-50 group-hover/vol:opacity-100 group-hover/vol:scale-100 transition-all duration-200 focus:outline-none" />
+        </Slider.Root>
       </div>
     </div>
   );
 };
-
-

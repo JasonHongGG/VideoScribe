@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useVideoStore } from "../../store/videoStore";
 import { useSTTStore } from "../../store/sttStore";
 import { VideoControls } from "./VideoControls";
@@ -22,6 +22,48 @@ export const VideoPlayer: React.FC = () => {
 
   const { results } = useSTTStore();
   const [currentSubtitle, setCurrentSubtitle] = useState<string | null>(null);
+
+  const [videoLayout, setVideoLayout] = useState({
+    containerHeight: 0,
+    videoBottomEdge: 0
+  });
+
+  const updateVideoLayout = useCallback(() => {
+    if (!videoRef.current || !containerRef.current) return;
+    const cw = containerRef.current.clientWidth;
+    const ch = containerRef.current.clientHeight;
+    const vw = videoRef.current.videoWidth;
+    const vh = videoRef.current.videoHeight;
+    
+    if (vw === 0 || vh === 0) return;
+    
+    const containerRatio = cw / ch;
+    const videoRatio = vw / vh;
+    
+    let renderedHeight;
+    if (containerRatio > videoRatio) {
+      renderedHeight = ch;
+    } else {
+      renderedHeight = cw / videoRatio;
+    }
+    
+    const top = (ch - renderedHeight) / 2;
+    
+    setVideoLayout({
+      containerHeight: ch,
+      videoBottomEdge: top + renderedHeight
+    });
+  }, []);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      updateVideoLayout();
+    });
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    return () => observer.disconnect();
+  }, [updateVideoLayout]);
 
   // Memoize results to prevent unnecessary scans if results haven't changed
   const memoizedResults = useMemo(() => results, [results]);
@@ -56,6 +98,7 @@ export const VideoPlayer: React.FC = () => {
     if (memoizedResults.length > 0) {
       // Opt: A linear scan here is okay for now as results length is usually < 1000
       const activeSubtitle = memoizedResults.find(r => currentTime >= r.start && currentTime <= r.end);
+      setCurrentSubtitle(activeSubtitle ? activeSubtitle.text : null);
     } else {
       setCurrentSubtitle(null);
     }
@@ -134,45 +177,49 @@ export const VideoPlayer: React.FC = () => {
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      updateVideoLayout();
     }
   };
 
+  const distanceFromContainerBottom = videoLayout.containerHeight - videoLayout.videoBottomEdge;
+  const baseBottomDistance = videoLayout.containerHeight === 0 ? 32 : distanceFromContainerBottom + 32;
+
   return (
-    <div 
-      ref={containerRef}
-      className="relative w-full h-full flex flex-col bg-black overflow-hidden group"
-    >
+    <div className="w-full h-full flex flex-col bg-[#0a0a0a] overflow-hidden">
       {videoUrl ? (
         <>
-          <video
-            ref={videoRef}
-            src={videoUrl}
-            className="w-full h-full object-contain"
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onEnded={() => setIsPlaying(false)}
-            onClick={() => setIsPlaying(!isPlaying)}
-          />
-          
-          <AnimatePresence>
-            {currentSubtitle && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="absolute bottom-28 left-0 w-full flex justify-center pointer-events-none px-12 transition-all z-30"
-              >
-                <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-4xl">
-                  <p className="text-[#facc15] font-medium text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-center leading-relaxed tracking-wide">
-                    {currentSubtitle}
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div ref={containerRef} className="flex-1 min-h-0 relative w-full flex flex-col bg-black">
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              className="w-full h-full object-contain"
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onEnded={() => setIsPlaying(false)}
+              onClick={() => setIsPlaying(!isPlaying)}
+            />
+            
+            <AnimatePresence>
+              {currentSubtitle && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute left-0 w-full flex justify-center pointer-events-none px-12 transition-all duration-300 ease-out z-30"
+                  style={{ bottom: `${baseBottomDistance}px` }}
+                >
+                  <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-4xl pointer-events-auto">
+                    <p className="text-[#facc15] font-medium text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-center leading-relaxed tracking-wide">
+                      {currentSubtitle}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-          <div className="absolute bottom-0 left-0 w-full transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus-within:opacity-100 z-40 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-20">
+          <div className="shrink-0 z-40 bg-black">
             <VideoControls />
           </div>
         </>
