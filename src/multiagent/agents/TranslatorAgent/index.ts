@@ -17,7 +17,7 @@ export class TranslatorAgent extends BaseAgent {
     super('TranslatorAgent', provider);
   }
 
-  async execute(segments: SubtitleSegment[], targetLanguage: string, previousContext: string = ''): Promise<TranslationResult[]> {
+  async execute(segments: SubtitleSegment[], targetLanguage: string, previousContext: string = '', sessionId?: string): Promise<TranslationResult[]> {
     const systemPrompt = buildSystemPrompt(targetLanguage);
     const prompt = buildTranslationPrompt(segments, previousContext);
 
@@ -32,6 +32,7 @@ export class TranslatorAgent extends BaseAgent {
           systemPrompt,
           temperature: 0.2, // Lower temperature for more stable JSON output
           maxTokens: 9192, // Increase max tokens to ensure it doesn't get cut off
+          sessionId, // pass the session ID to the provider
         });
 
         console.log(`[TranslatorAgent] Received response from provider.`);

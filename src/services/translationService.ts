@@ -26,6 +26,9 @@ export class TranslationService {
       
       const targetLanguage = sttStore.targetLanguage;
       
+      // Generate a unique session ID for this entire translation task
+      const sessionId = crypto.randomUUID();
+      
       // We will translate in chunks of 15 sentences to give LLM enough context without overflowing.
       const CHUNK_SIZE = 15;
       const chunks: STTResult[][] = [];
@@ -48,7 +51,7 @@ export class TranslationService {
         }));
 
         try {
-          const translations = await agent.execute(segments, targetLanguage, previousContext);
+          const translations = await agent.execute(segments, targetLanguage, previousContext, sessionId);
           
           // Map back to our main results array
           for (const t of translations) {
