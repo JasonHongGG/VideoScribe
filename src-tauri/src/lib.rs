@@ -14,7 +14,6 @@ pub fn create_builder() -> tauri_specta::Builder<tauri::Wry> {
         .commands(tauri_specta::collect_commands![
             greet,
             lookup_word,
-            save_agent_log,
             run_stt,
             run_agent_task,
             get_app_state,
@@ -33,12 +32,6 @@ fn greet(name: &str) -> String {
 fn lookup_word(text: String, state: State<'_, Mutex<DictionaryState>>) -> Result<LookupResult, String> {
     let dict = state.lock().map_err(|e| e.to_string())?;
     dict.lookup(&text)
-}
-
-#[tauri::command]
-#[specta::specta]
-fn save_agent_log(filename: String, content: String) -> Result<(), String> {
-    crate::application::log_service::LogService::save_agent_log(filename, content)
 }
 
 #[tauri::command]

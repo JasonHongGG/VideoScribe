@@ -6,10 +6,10 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 export const commands = {
 	greet: (name: string) => __TAURI_INVOKE<string>("greet", { name }),
 	lookupWord: (text: string) => typedError<LookupResult, string>(__TAURI_INVOKE("lookup_word", { text })),
-	saveAgentLog: (filename: string, content: string) => typedError<null, string>(__TAURI_INVOKE("save_agent_log", { filename, content })),
 	runStt: (videoPath: string, modelSize: string) => typedError<null, string>(__TAURI_INVOKE("run_stt", { videoPath, modelSize })),
 	runAgentTask: (agentType: AgentType, payloadJson: string) => typedError<string, string>(__TAURI_INVOKE("run_agent_task", { agentType, payloadJson })),
 	getAppState: () => typedError<ProjectState, string>(__TAURI_INVOKE("get_app_state")),
+	startTranslation: () => typedError<null, string>(__TAURI_INVOKE("start_translation")),
 };
 
 /* Types */

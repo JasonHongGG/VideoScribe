@@ -18,10 +18,12 @@ impl AgentLogger {
     pub fn init() {}
 
     pub fn log(agent: &str, metadata: Value, request: Value, response: Value) {
-        let mut path = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-        path.push(".runtime");
-        path.push("logs");
-        path.push("agents");
+        let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let mut path = if current_dir.ends_with("src-tauri") {
+            current_dir.parent().unwrap_or(&current_dir).join(".runtime").join("logs").join("agents")
+        } else {
+            current_dir.join(".runtime").join("logs").join("agents")
+        };
 
         if let Err(e) = std::fs::create_dir_all(&path) {
             println!("Warning: Failed to create agent log directory: {}", e);
