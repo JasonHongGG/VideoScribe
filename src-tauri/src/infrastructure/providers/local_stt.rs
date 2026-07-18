@@ -1,14 +1,18 @@
 use crate::domain::stt::STTProvider;
 use serde_json::Value;
 use std::process::{Command, Stdio};
-use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
+use reqwest::Client;
+use reqwest_eventsource::{Event, EventSource};
+use futures_util::StreamExt;
 
-pub struct LocalSTTProvider;
+pub struct LocalSTTProvider {
+    backend_port: u16,
+}
 
 impl LocalSTTProvider {
-    pub fn new() -> Self {
-        Self
+    pub fn new(backend_port: u16) -> Self {
+        Self { backend_port }
     }
 }
 
@@ -21,6 +25,7 @@ impl STTProvider for LocalSTTProvider {
     ) -> Result<(), String> {
         let video_path = video_path.to_string();
         let model_size = model_size.to_string();
+        let port = self.backend_port;
         
         std::thread::spawn(move || {
             let exe_dir = std::env::current_exe()
@@ -36,9 +41,8 @@ impl STTProvider for LocalSTTProvider {
             if backend_exe.exists() {
                 child_cmd = Command::new(&backend_exe);
                 child_cmd
-                    .arg(&video_path)
-                    .arg("--model")
-                    .arg(&model_size);
+                    .arg("--port")
+                    .arg(port.to_string());
                     
                 let ffmpeg_dir = exe_dir.join("ffmpeg").join("bin");
                 if let Some(path_var) = std::env::var_os("PATH") {
@@ -58,14 +62,12 @@ impl STTProvider for LocalSTTProvider {
                 child_cmd
                     .arg("run")
                     .arg("cli.py")
-                    .arg(&video_path)
-                    .arg("--model")
-                    .arg(&model_size)
+                    .arg("--port")
+                    .arg(port.to_string())
                     .current_dir(backend_dir);
             }
 
-            child_cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
-
+            // Don't pipe stdout anymore, just hide the window on Windows.
             #[cfg(target_os = "windows")]
             {
                 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -76,23 +78,77 @@ impl STTProvider for LocalSTTProvider {
             let mut child = match child_cmd.spawn() {
                 Ok(c) => c,
                 Err(e) => {
-                    let err_msg = serde_json::json!({"type": "error", "message": format!("Failed to spawn STT process: {}", e)});
+                    let err_msg = serde_json::json!({"type": "error", "message": format!("Failed to spawn STT backend: {}", e)});
                     on_event(err_msg);
                     return;
                 }
             };
 
-            if let Some(stdout) = child.stdout.take() {
-                let reader = BufReader::new(stdout);
-                for line in reader.lines() {
-                    if let Ok(line_str) = line {
-                        if let Ok(json) = serde_json::from_str::<Value>(&line_str) {
-                            on_event(json);
+            let rt = match tokio::runtime::Runtime::new() {
+                Ok(rt) => rt,
+                Err(e) => {
+                    let err_msg = serde_json::json!({"type": "error", "message": format!("Failed to create tokio runtime: {}", e)});
+                    on_event(err_msg);
+                    let _ = child.kill();
+                    return;
+                }
+            };
+
+            rt.block_on(async {
+                let mut retries = 0;
+                let client = Client::new();
+                let url = format!("http://127.0.0.1:{}/api/v1/stt/transcribe", port);
+                
+                // Wait for FastAPI server to boot
+                while retries < 20 {
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                    if reqwest::get(&url.replace("/api/v1/stt/transcribe", "/docs")).await.is_ok() {
+                        break;
+                    }
+                    retries += 1;
+                }
+
+                let req_body = serde_json::json!({
+                    "video_path": video_path,
+                    "model": model_size,
+                    "device": "auto",
+                    "compute_type": "default",
+                    "language": "auto"
+                });
+
+                let builder = client.post(&url).json(&req_body);
+                let mut es = match EventSource::new(builder) {
+                    Ok(source) => source,
+                    Err(e) => {
+                        on_event(serde_json::json!({"type": "error", "message": format!("Failed to connect to SSE: {}", e)}));
+                        return;
+                    }
+                };
+
+                while let Some(event) = es.next().await {
+                    match event {
+                        Ok(Event::Open) => { /* Connection open */ }
+                        Ok(Event::Message(message)) => {
+                            if let Ok(mut json) = serde_json::from_str::<serde_json::Map<String, Value>>(&message.data) {
+                                // Add the event type to the JSON payload so the frontend can route it properly
+                                json.insert("type".to_string(), Value::String(message.event.clone()));
+                                on_event(Value::Object(json));
+                            }
+                        }
+                        Err(reqwest_eventsource::Error::StreamEnded) => {
+                            break;
+                        }
+                        Err(e) => {
+                            let err_msg = serde_json::json!({"type": "error", "message": format!("SSE Connection error: {:?}", e)});
+                            on_event(err_msg);
+                            break;
                         }
                     }
                 }
-            }
+            });
             
+            // Clean up child process
+            let _ = child.kill();
             let _ = child.wait();
         });
         
