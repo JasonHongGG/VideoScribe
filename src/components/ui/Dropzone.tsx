@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud } from 'lucide-react';
-import { useVideoStore } from '../../store/videoStore';
 import { VideoLoaderService } from '../../services/videoLoaderService';
 
 export function Dropzone() {
@@ -14,7 +13,6 @@ export function Dropzone() {
         const setupDragDrop = async () => {
             try {
                 const { getCurrentWindow } = await import("@tauri-apps/api/window");
-                const { convertFileSrc } = await import("@tauri-apps/api/core");
 
                 const handler = await getCurrentWindow().onDragDropEvent((event) => {
                     if (!isMounted) return;

@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useVideoStore } from "../../store/videoStore";
 import { useSTTStore } from "../../store/sttStore";
 import { VideoControls } from "./VideoControls";
-import { Upload } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
