@@ -84,6 +84,12 @@ impl TranslationCoordinator {
                     }
                     Err(e) => {
                         eprintln!("Translation chunk {} failed: {}", i, e);
+                        if let Ok(mut proj) = project_mutex.lock() {
+                            proj.fail_translation();
+                        }
+                        let _ = dispatcher.emit("error", json!({"message": format!("Translation failed: {}", e)}));
+                        let _ = dispatcher.emit("app-state-changed", Value::Null);
+                        return; // Abort the async loop entirely!
                     }
                 }
                 

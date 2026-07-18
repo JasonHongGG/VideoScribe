@@ -91,6 +91,10 @@ impl ProjectState {
         self.results = final_results;
     }
 
+    pub fn fail_translation(&mut self) {
+        self.translation_status = TranslationStatus::Error;
+    }
+
     pub fn set_stt_status(&mut self, status: STTStatus) {
         self.stt_status = status;
     }

@@ -8,6 +8,7 @@ export const useAppEvents = () => {
   useEffect(() => {
     let unlistenSettings: () => void;
     let unlistenState: () => void;
+    let unlistenError: () => void;
 
     const setupListeners = async () => {
       unlistenSettings = await listen("setting-changed", (event: any) => {
@@ -36,6 +37,13 @@ export const useAppEvents = () => {
           console.error("Failed to sync app state:", e);
         }
       });
+
+      unlistenError = await listen("error", (event: any) => {
+        const { message } = event.payload;
+        import("../store/notifyStore").then(({ useNotifyStore }) => {
+          useNotifyStore.getState().show(message || "An unknown error occurred", "error");
+        });
+      });
     };
 
     setupListeners();
@@ -43,6 +51,7 @@ export const useAppEvents = () => {
     return () => {
       if (unlistenSettings) unlistenSettings();
       if (unlistenState) unlistenState();
+      if (unlistenError) unlistenError();
     };
   }, []);
 };
