@@ -57,7 +57,7 @@ impl STTProvider for LocalSTTProvider {
                 child_cmd = Command::new("uv");
                 child_cmd
                     .arg("run")
-                    .arg("main.py")
+                    .arg("cli.py")
                     .arg(&video_path)
                     .arg("--model")
                     .arg(&model_size)

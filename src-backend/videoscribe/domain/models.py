@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 
 @dataclass
-class STTResult:
+class TranscriptionSegment:
     start: float
     end: float
     text: str
@@ -12,4 +12,3 @@ class TranscriptionInfo:
     language: str
     language_probability: float
     duration: float
-
