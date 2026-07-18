@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { DictionaryTooltip } from "../stt/DictionaryTooltip";
+import { VideoEmptyState } from "./VideoEmptyState";
 
 export const VideoPlayer: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -423,17 +424,7 @@ export const VideoPlayer: React.FC = () => {
           )}
         </>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-transparent to-black/40">
-          <div className="p-8 rounded-full bg-white/5 mb-8 text-[#facc15] shadow-[0_0_30px_rgba(250,204,21,0.15)] ring-1 ring-white/10">
-            <Upload size={56} className="opacity-80" />
-          </div>
-          <h2 className="text-3xl font-bold mb-4 text-white tracking-tight drop-shadow-md">
-            Drop Video Here
-          </h2>
-          <p className="text-sm text-gray-400 tracking-[0.2em] uppercase font-semibold">
-            Supports MP4, WEBM, MKV
-          </p>
-        </div>
+        <VideoEmptyState />
       )}
     </div>
   );

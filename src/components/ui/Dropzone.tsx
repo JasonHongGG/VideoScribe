@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud } from 'lucide-react';
 import { useVideoStore } from '../../store/videoStore';
+import { VideoLoaderService } from '../../services/videoLoaderService';
 
 export function Dropzone() {
     const [isDragging, setIsDragging] = useState(false);
-    const { setVideo } = useVideoStore();
 
     useEffect(() => {
         let unlisten: (() => void) | undefined;
@@ -26,14 +26,7 @@ export function Dropzone() {
                         
                         const paths = event.payload.paths;
                         if (paths && paths.length > 0) {
-                            const path = paths[0];
-                            const ext = path.split('.').pop()?.toLowerCase();
-                            if (ext === 'mp4' || ext === 'mkv' || ext === 'webm') {
-                                const url = convertFileSrc(path);
-                                const fileName = path.split('\\').pop() || path.split('/').pop() || "video";
-                                const mockFile = new File([], fileName);
-                                setVideo(mockFile, url, path);
-                            }
+                            VideoLoaderService.loadVideoFromPath(paths[0]);
                         }
                     } else {
                         setIsDragging(false);
@@ -56,7 +49,7 @@ export function Dropzone() {
             isMounted = false;
             if (unlisten) unlisten();
         };
-    }, [setVideo]);
+    }, []);
 
     return (
         <AnimatePresence>
