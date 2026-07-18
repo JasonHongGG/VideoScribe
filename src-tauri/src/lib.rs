@@ -1,6 +1,5 @@
 use tauri::{AppHandle, State, Manager};
 use serde_json::Value;
-use std::sync::Mutex;
 use std::path::PathBuf;
 
 use crate::domain::language::LookupResult;

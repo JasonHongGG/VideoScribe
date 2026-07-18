@@ -1,6 +1,6 @@
 use crate::domain::stt::STTProvider;
 use serde_json::Value;
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::path::PathBuf;
 use reqwest::Client;
 use reqwest_eventsource::{Event, EventSource};

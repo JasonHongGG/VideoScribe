@@ -18,7 +18,8 @@ export const STTProcessingOverlay: React.FC<Props> = ({ progress }) => {
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          className="h-full bg-[#facc15] shadow-[0_0_10px_rgba(250,204,21,0.5)] relative overflow-hidden transition-all duration-300"
+          transition={{ type: "spring", stiffness: 40, damping: 15, mass: 1 }}
+          className="h-full bg-[#facc15] shadow-[0_0_10px_rgba(250,204,21,0.5)] relative overflow-hidden"
         />
       </div>
     </div>

@@ -10,7 +10,7 @@ export const STTTranslationOverlay: React.FC<Props> = ({ progress }) => {
     <div className="absolute inset-0 bg-[#121212]/80 backdrop-blur-md z-10 flex flex-col items-center justify-center p-8 text-center">
       <div className="relative mb-6">
         <div className="w-16 h-16 rounded-full border-4 border-white/5 absolute inset-0" />
-        <div className="w-16 h-16 rounded-full border-4 border-t-[#facc15] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+        <div className="w-16 h-16 rounded-full border-4 border-t-[#3b82f6] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
       </div>
       <p className="text-white font-bold text-sm mb-3 tracking-widest drop-shadow-md">TRANSLATING SUBTITLES</p>
       
@@ -18,7 +18,8 @@ export const STTTranslationOverlay: React.FC<Props> = ({ progress }) => {
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          className="h-full bg-[#facc15] shadow-[0_0_10px_rgba(250,204,21,0.5)] relative overflow-hidden transition-all duration-300"
+          transition={{ type: "spring", stiffness: 40, damping: 15, mass: 1 }}
+          className="h-full bg-[#3b82f6] shadow-[0_0_10px_rgba(59,130,246,0.5)] relative overflow-hidden"
         />
       </div>
     </div>
