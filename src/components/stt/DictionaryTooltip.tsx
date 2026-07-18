@@ -1,20 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-
-interface DictionaryEntry {
-  id: string;
-  kanji: string[];
-  kana: string[];
-  glossary: string[];
-}
-
-interface LookupResult {
-  original_text: string;
-  token: string;
-  base_form: string;
-  reading: string;
-  entries: DictionaryEntry[];
-}
+import { LookupResult } from "../../types/bindings";
 
 interface Props {
   text: string;
@@ -24,14 +10,6 @@ interface Props {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }
-
-// Helper to convert Katakana to Hiragana
-const kata2hira = (str: string) => {
-  return str.replace(/[\u30a1-\u30f6]/g, (match) => {
-    const chr = match.charCodeAt(0) - 0x60;
-    return String.fromCharCode(chr);
-  });
-};
 
 export const DictionaryTooltip: React.FC<Props> = ({ text, x, y, onClose, onMouseEnter, onMouseLeave }) => {
   const [result, setResult] = useState<LookupResult | null>(null);
@@ -74,8 +52,8 @@ export const DictionaryTooltip: React.FC<Props> = ({ text, x, y, onClose, onMous
     <div
       className="fixed z-[99999] pointer-events-none"
       style={{
-        left: Math.min(x, window.innerWidth - 340), // Keep it within screen bounds horizontally
-        bottom: window.innerHeight - y + 15, // Start 15px above cursor to prevent overlapping the current line
+        left: Math.min(x, window.innerWidth - 340),
+        bottom: window.innerHeight - y + 15,
       }}
     >
       <div 
@@ -85,7 +63,7 @@ export const DictionaryTooltip: React.FC<Props> = ({ text, x, y, onClose, onMous
       >
         {loading ? (
             <div className="flex items-center justify-center py-4">
-              <div className="w-5 h-5 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-[#facc15] border-t-transparent rounded-full animate-spin"></div>
             </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -95,8 +73,8 @@ export const DictionaryTooltip: React.FC<Props> = ({ text, x, y, onClose, onMous
                   {result?.base_form}
                 </span>
                 {result?.reading && result.reading !== result.base_form && (
-                  <span className="text-sm font-medium text-yellow-300">
-                    {kata2hira(result.reading)}
+                  <span className="text-sm font-medium text-[#facc15]/80">
+                    {result.reading}
                   </span>
                 )}
               </div>
@@ -106,18 +84,23 @@ export const DictionaryTooltip: React.FC<Props> = ({ text, x, y, onClose, onMous
               {result?.entries.slice(0, 3).map((entry) => (
                 <div key={entry.id} className="mb-3 last:mb-0">
                   <div className="flex flex-wrap gap-1 mb-1">
-                    {entry.kanji.slice(0, 2).map((k) => (
-                      <span key={k} className="text-xs bg-white/10 text-white/90 px-1.5 py-0.5 rounded">
+                    {entry.headwords.slice(0, 2).map((k) => (
+                      <span key={k} className="text-xs bg-white/10 text-white/90 px-1.5 py-0.5 rounded font-bold">
                         {k}
                       </span>
                     ))}
-                    {entry.kana.slice(0, 2).map((k) => (
-                      <span key={k} className="text-xs bg-yellow-500/20 text-yellow-200 px-1.5 py-0.5 rounded">
+                    {entry.pronunciations.slice(0, 2).map((k) => (
+                      <span key={k} className="text-xs bg-[#facc15]/20 text-[#facc15] px-1.5 py-0.5 rounded font-mono">
                         {k}
+                      </span>
+                    ))}
+                    {entry.tags && entry.tags.slice(0, 2).map((t) => (
+                      <span key={t} className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/30">
+                        {t}
                       </span>
                     ))}
                   </div>
-                  <ul className="list-disc pl-4 space-y-1">
+                  <ul className="list-disc pl-4 space-y-1 mt-1">
                     {entry.glossary.slice(0, 3).map((g, i) => (
                       <li key={i} className="text-sm text-gray-300 leading-snug">
                         {g}

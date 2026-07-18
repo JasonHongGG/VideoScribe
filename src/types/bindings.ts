@@ -16,8 +16,9 @@ export type AgentType = "TranslatorAgent";
 
 export type DictionaryEntry = {
 	id: string,
-	kanji: string[],
-	kana: string[],
+	headwords: string[],
+	pronunciations: string[],
+	tags: string[],
 	glossary: string[],
 };
 
@@ -25,7 +26,7 @@ export type LookupResult = {
 	original_text: string,
 	token: string,
 	base_form: string,
-	reading: string,
+	reading: string | null,
 	entries: DictionaryEntry[],
 };
 

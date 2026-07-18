@@ -3,7 +3,9 @@ use serde_json::Value;
 use std::sync::Mutex;
 use std::path::PathBuf;
 
-use crate::infrastructure::dictionary::{DictionaryState, LookupResult};
+use crate::domain::language::LookupResult;
+use crate::infrastructure::plugins::PluginManager;
+use crate::infrastructure::plugins::japanese::JapanesePlugin;
 
 pub mod domain;
 pub mod infrastructure;
@@ -22,9 +24,14 @@ pub fn create_builder() -> tauri_specta::Builder<tauri::Wry> {
 
 #[tauri::command]
 #[specta::specta]
-fn lookup_word(text: String, state: State<'_, Mutex<DictionaryState>>) -> Result<LookupResult, String> {
-    let dict = state.lock().map_err(|e| e.to_string())?;
-    dict.lookup(&text)
+fn lookup_word(text: String, state: State<'_, crate::infrastructure::state::AppState>) -> Result<LookupResult, String> {
+    let language = crate::domain::language::Language::Japanese; // Hardcode Japanese for now
+    
+    crate::application::language_service::LanguageService::lookup_word(
+        state.plugin_manager.clone(),
+        language,
+        &text
+    )
 }
 
 #[tauri::command]
@@ -110,16 +117,14 @@ pub fn run() {
                 PathBuf::from("jmdict.db")
             };
 
-            match DictionaryState::new(actual_db_path) {
-                Ok(state) => {
-                    app.manage(Mutex::new(state));
-                }
-                Err(e) => {
-                    eprintln!("Failed to initialize dictionary: {}", e);
-                }
+            let mut plugin_manager = PluginManager::new();
+            if let Ok(japanese_plugin) = JapanesePlugin::new(actual_db_path) {
+                plugin_manager.register_plugin(std::sync::Arc::new(japanese_plugin));
+            } else {
+                eprintln!("Failed to initialize Japanese plugin");
             }
 
-            match crate::infrastructure::state::AppState::new() {
+            match crate::infrastructure::state::AppState::new(plugin_manager) {
                 Ok(state) => {
                     app.manage(state);
                 }

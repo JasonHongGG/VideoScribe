@@ -4,4 +4,4 @@ pub mod providers;
 pub mod agents;
 pub mod tauri_events;
 pub mod state;
-pub mod dictionary;
+pub mod plugins;
