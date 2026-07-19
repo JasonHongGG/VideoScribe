@@ -7,7 +7,7 @@ interface Props {
 
 export const STTTranslationOverlay: React.FC<Props> = ({ progress }) => {
   return (
-    <div className="absolute inset-0 bg-[#121212]/80 backdrop-blur-md z-10 flex flex-col items-center justify-center p-8 text-center">
+    <div className="absolute inset-0 bg-[#121212]/95 z-10 flex flex-col items-center justify-center p-8 text-center">
       <div className="relative mb-6">
         <div className="w-16 h-16 rounded-full border-4 border-white/5 absolute inset-0" />
         <div className="w-16 h-16 rounded-full border-4 border-t-[#3b82f6] border-r-transparent border-b-transparent border-l-transparent animate-spin" />

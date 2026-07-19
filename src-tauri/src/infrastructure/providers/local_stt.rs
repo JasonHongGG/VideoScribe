@@ -106,6 +106,9 @@ impl STTProvider for LocalSTTProvider {
                 child_cmd.creation_flags(CREATE_NO_WINDOW);
             }
 
+            // Pipe stdin so we can tie Python lifecycle to Rust
+            child_cmd.stdin(std::process::Stdio::piped());
+
             let mut child = match child_cmd.spawn() {
                 Ok(c) => c,
                 Err(e) => {

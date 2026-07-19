@@ -1,3 +1,5 @@
+import subprocess
+import numpy as np
 from typing import Iterator, Tuple
 from faster_whisper import WhisperModel
 from videoscribe.domain.models import TranscriptionSegment, TranscriptionInfo
@@ -10,7 +12,7 @@ class FasterWhisperRecognizer(SpeechRecognizer):
     def load_model(self, model_size: str, device: str, compute_type: str) -> None:
         self._model = WhisperModel(model_size, device=device, compute_type=compute_type)
         
-    def transcribe(self, audio_path: str, language: str = "auto") -> Tuple[Iterator[TranscriptionSegment], TranscriptionInfo]:
+    def transcribe(self, audio_path: str, language: str = "auto", reporter = None) -> Tuple[Iterator[TranscriptionSegment], TranscriptionInfo]:
         if not self._model:
             raise RuntimeError("Model not loaded. Call load_model first.")
             
@@ -23,8 +25,25 @@ class FasterWhisperRecognizer(SpeechRecognizer):
         
         if language != "auto":
             transcribe_kwargs["language"] = language
+            
+        # Bypass PyAV and iGPU video decoding by extracting audio natively using FFmpeg
+        cmd = [
+            "ffmpeg", "-i", audio_path, "-vn",
+            "-f", "s16le", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", "-"
+        ]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        out, _ = process.communicate()
+        
+        if process.returncode != 0 and len(out) == 0:
+            raise RuntimeError("Failed to extract audio stream from video.")
+            
+        # Prevent frombuffer crash if odd bytes
+        if len(out) % 2 != 0:
+            out = out[:-1]
+            
+        audio_array = np.frombuffer(out, dtype=np.int16).astype(np.float32) / 32768.0
 
-        segments, info = self._model.transcribe(audio_path, **transcribe_kwargs)
+        segments, info = self._model.transcribe(audio_array, **transcribe_kwargs)
         
         domain_info = TranscriptionInfo(
             language=info.language,

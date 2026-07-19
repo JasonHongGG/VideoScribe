@@ -2,6 +2,8 @@ import asyncio
 import threading
 import uvicorn
 import argparse
+import sys
+import os
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
@@ -61,6 +63,17 @@ def main():
     parser = argparse.ArgumentParser(description="VideoScribe STT Backend Server")
     parser.add_argument("--port", type=int, default=8000, help="Port to run the server on")
     args = parser.parse_args()
+
+    # Watchdog thread: wait for stdin to close (parent Tauri dies)
+    def watchdog():
+        try:
+            sys.stdin.read()
+        except Exception:
+            pass
+        finally:
+            os._exit(0)
+            
+    threading.Thread(target=watchdog, daemon=True).start()
 
     uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="info")
 
