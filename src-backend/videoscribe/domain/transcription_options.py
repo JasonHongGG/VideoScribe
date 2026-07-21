@@ -15,6 +15,7 @@ class TranscriptionOptions:
     compute_type: str
     language: str = "auto"
     vad_filter: bool = False
+    use_batch: bool = True
     batch_size: int = 16
     initial_prompt: Optional[str] = None
     cue_policy: CuePolicy = field(default_factory=CuePolicy)

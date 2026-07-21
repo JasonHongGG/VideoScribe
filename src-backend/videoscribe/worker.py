@@ -63,21 +63,28 @@ class CommandRouter:
             reporter.report_error("video_path is required")
             return
 
-        # Auto-detect optimal device and compute_type
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        compute_type = "int8_float16" if device == "cuda" else "default"
-
+        # Orchestrator Decisions: Auto-detect optimal device and compute_type
+        is_gpu = torch.cuda.is_available()
+        device = "cuda" if is_gpu else "cpu"
+        
+        # FasterWhisper CPU recommends int8. GPU uses int8_float16.
+        compute_type = "int8_float16" if is_gpu else "int8"
+        
+        # Orchestrator Decisions: Batching
+        # Only allow batching if the user requested it AND we have a GPU
+        use_batch = payload.use_batch and is_gpu
+        
         reporter.report_initial_state(device, compute_type, payload.language)
         
         # Build options
-        
         options = TranscriptionOptions(
             model_size=payload.model,
             device=device,
             compute_type=compute_type,
             language=payload.language,
             vad_filter=payload.use_vad,
-            batch_size=payload.batch_size if payload.use_batch else 1, # If not batched, force batch_size=1
+            use_batch=use_batch,
+            batch_size=payload.batch_size,
             initial_prompt=PromptRegistry.get_prompt(payload.language)
         )
         

@@ -15,23 +15,15 @@ class FasterWhisperEngine(SpeechRecognizer):
         self._is_batched = False
         
     def load_model(self, options: TranscriptionOptions) -> None:
-        compute_type = options.compute_type
-        if (options.device.lower() == "cuda" or options.device.lower() == "auto") and compute_type == "default":
-            logger.info("Upgrading compute_type from 'default' to 'int8_float16' for better GPU performance.")
-            compute_type = "int8_float16"
-
-        logger.info(f"Loading WhisperModel: {options.model_size} on {options.device} ({compute_type})")
-        self._model = WhisperModel(options.model_size, device=options.device, compute_type=compute_type)
+        logger.info(f"Loading WhisperModel: {options.model_size} on {options.device} ({options.compute_type})")
+        self._model = WhisperModel(options.model_size, device=options.device, compute_type=options.compute_type)
         
-        # Check if we should use BatchedInferencePipeline
-        is_gpu = options.device.lower() in ("cuda", "auto")
-        if is_gpu and options.batch_size > 1:
+        if options.use_batch:
             logger.info(f"Initializing BatchedInferencePipeline with batch_size={options.batch_size} and vad_filter={options.vad_filter}.")
             self._pipeline = BatchedInferencePipeline(model=self._model)
             self._is_batched = True
         else:
-            reason = "CPU detected or batching disabled."
-            logger.info(f"{reason} Falling back to standard inference.")
+            logger.info("Using standard inference.")
             self._is_batched = False
             self._pipeline = None
             
