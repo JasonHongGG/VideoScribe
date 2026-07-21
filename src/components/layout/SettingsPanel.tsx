@@ -1,5 +1,6 @@
 import { Select } from "../ui/Select";
 import { Slider } from "../ui/Slider";
+import { Toggle } from "../ui/Toggle";
 import { useSTTSettingsStore } from "../../store/sttSettingsStore";
 import { emit } from "@tauri-apps/api/event";
 
@@ -119,12 +120,12 @@ export const SettingsPanel: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-gray-300">Use Batch Processing</label>
-                <p className="text-xs text-gray-500 mt-1">Dramatically speeds up transcription by processing multiple audio segments at once.</p>
+                <p className="text-xs text-gray-500 mt-1">Faster transcription via chunking.</p>
               </div>
               
-              <button 
-                onClick={async () => {
-                  const newValue = !useBatch;
+              <Toggle 
+                checked={useBatch}
+                onChange={async (newValue) => {
                   setUseBatch(newValue);
                   await emit("setting-changed", { key: "useBatch", value: newValue });
                   if (newValue && vadEngine === 'off') {
@@ -132,10 +133,7 @@ export const SettingsPanel: React.FC = () => {
                     await emit("setting-changed", { key: "vadEngine", value: 'native' });
                   }
                 }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all focus:outline-none ${useBatch ? 'bg-[#facc15] shadow-[0_0_15px_rgba(250,204,21,0.3)]' : 'bg-gray-600'}`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${useBatch ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
+              />
             </div>
 
             {useBatch && (
@@ -173,16 +171,13 @@ export const SettingsPanel: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-1">Show generated subtitles directly on the video player</p>
               </div>
               
-              <button 
-                onClick={async () => {
-                  const newValue = !showSubtitles;
+              <Toggle 
+                checked={showSubtitles}
+                onChange={async (newValue) => {
                   setShowSubtitles(newValue);
                   await emit("setting-changed", { key: "showSubtitles", value: newValue });
                 }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all focus:outline-none ${showSubtitles ? 'bg-[#facc15] shadow-[0_0_15px_rgba(250,204,21,0.3)]' : 'bg-gray-600'}`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showSubtitles ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
+              />
             </div>
 
             <div className="h-px bg-white/5 w-full my-6"></div>
@@ -193,16 +188,13 @@ export const SettingsPanel: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-1">Hover over Japanese subtitles to see readings and definitions</p>
               </div>
               
-              <button 
-                onClick={async () => {
-                  const newValue = !enableDictionary;
+              <Toggle 
+                checked={enableDictionary}
+                onChange={async (newValue) => {
                   setEnableDictionary(newValue);
                   await emit("setting-changed", { key: "enableDictionary", value: newValue });
                 }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all focus:outline-none ${enableDictionary ? 'bg-[#facc15] shadow-[0_0_15px_rgba(250,204,21,0.3)]' : 'bg-gray-600'}`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enableDictionary ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
+              />
             </div>
 
             <div className="h-px bg-white/5 w-full my-6"></div>
@@ -213,16 +205,13 @@ export const SettingsPanel: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-1">Show Hiragana readings above Kanji in Japanese subtitles</p>
               </div>
               
-              <button 
-                onClick={async () => {
-                  const newValue = !enableFurigana;
+              <Toggle 
+                checked={enableFurigana}
+                onChange={async (newValue) => {
                   setEnableFurigana(newValue);
                   await emit("setting-changed", { key: "enableFurigana", value: newValue });
                 }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all focus:outline-none ${enableFurigana ? 'bg-[#facc15] shadow-[0_0_15px_rgba(250,204,21,0.3)]' : 'bg-gray-600'}`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enableFurigana ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
+              />
             </div>
           </section>
 
@@ -239,16 +228,13 @@ export const SettingsPanel: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-1">Automatically translate generated subtitles using local LLM</p>
               </div>
               
-              <button 
-                onClick={async () => {
-                  const newValue = !enableTranslation;
+              <Toggle 
+                checked={enableTranslation}
+                onChange={async (newValue) => {
                   setEnableTranslation(newValue);
                   await emit("setting-changed", { key: "enableTranslation", value: newValue });
                 }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all focus:outline-none ${enableTranslation ? 'bg-[#facc15] shadow-[0_0_15px_rgba(250,204,21,0.3)]' : 'bg-gray-600'}`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enableTranslation ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
+              />
             </div>
 
             <div className="h-px bg-white/5 w-full my-6"></div>

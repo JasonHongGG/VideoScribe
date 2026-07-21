@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 from videoscribe.domain.interfaces import AudioAnalyzer, SpeechRecognizer, ProgressReporter
 from videoscribe.domain.transcription_options import TranscriptionOptions
-from videoscribe.application.transcript_assembler import TranscriptAssembler
+from videoscribe.application.segment_refiner import SegmentRefiner
 from videoscribe.domain.cancellation import CancellationToken, CancelledException
 
 logger = logging.getLogger(__name__)
@@ -41,18 +41,19 @@ class TranscriptionJob:
             if info:
                 self._reporter.report_language(info.language)
                 
-            # Step 3: Iterate and report segments via Assembler
-            assembler = TranscriptAssembler(options.cue_policy, self._reporter)
+            # Step 3: Iterate and report segments uniformly via SegmentRefiner
+            refiner = SegmentRefiner(options.cue_policy)
             
             for segment in segments_iter:
-                assembler.process_segment(segment)
-                
-                # Update progress based on segment time vs total duration
+                refined_segments = refiner.process(segment)
+                for domain_segment in refined_segments:
+                    self._reporter.report_result(domain_segment)
+                    
+                # Update progress based on the original segment's end time
                 if duration > 0:
                     progress_pct = min(100, int((segment.end / duration) * 100))
                     self._reporter.report_progress("transcribing", progress_pct)
-                    
-            assembler.flush() # Ensure the last chunk is sent
+            
             self._reporter.report_progress("completed", 100)
             
         except CancelledException as e:
