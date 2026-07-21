@@ -38,28 +38,24 @@ class FasterWhisperEngine(SpeechRecognizer):
             "condition_on_previous_text": False
         }
         
-        # Configure VAD based on engine type
-        custom_vad_windows = None
-        if options.vad_engine == VADEngineType.CUSTOM:
-            vad_analyzer = VADFactory.create(options)
-            if vad_analyzer:
-                logger.info(f"Running Custom VAD Analyzer internally: {vad_analyzer.__class__.__name__}")
-                windows_iter = vad_analyzer.analyze(audio_path, options)
-                if windows_iter is not None:
-                    custom_vad_windows = list(windows_iter)
-                    logger.info(f"Custom VAD generated {len(custom_vad_windows)} chunks.")
+        # 1. Ask Factory for external VAD Analyzer
+        external_vad = VADFactory.create(options)
         
-        if options.vad_engine == VADEngineType.CUSTOM and custom_vad_windows is not None:
-            transcribe_kwargs["vad_filter"] = False
-            if self._is_batched:
-                transcribe_kwargs["clip_timestamps"] = [{"start": w.start, "end": w.end} for w in custom_vad_windows]
+        if external_vad:
+            # 2a. If found, run it and use the rich VADResult to format timestamps
+            logger.info(f"Using external VAD analyzer: {external_vad.__class__.__name__}")
+            vad_result = external_vad.analyze(audio_path, options)
+            if vad_result and not vad_result.is_empty:
+                logger.info(f"External VAD generated {len(vad_result.windows)} chunks.")
+                transcribe_kwargs["vad_filter"] = False
+                transcribe_kwargs["clip_timestamps"] = (
+                    vad_result.to_dict_list() if self._is_batched else vad_result.to_flat_list()
+                )
             else:
-                # Flat list of start/end pairs for standard model
-                flat_list = []
-                for w in custom_vad_windows:
-                    flat_list.extend([w.start, w.end])
-                transcribe_kwargs["clip_timestamps"] = flat_list
+                # Fallback if VAD fails or returns empty
+                transcribe_kwargs["vad_filter"] = False
         else:
+            # 2b. If no external VAD is configured, use engine's native logic
             transcribe_kwargs["vad_filter"] = (options.vad_engine == VADEngineType.NATIVE)
         
         if options.language != "auto" and options.language:

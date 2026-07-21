@@ -30,7 +30,7 @@ const TRANSLATION_LANGUAGES = [
 const VAD_ENGINE_OPTIONS = [
   { value: "off", label: "Off (No VAD)" },
   { value: "native", label: "Native (Whisper Built-in)" },
-  { value: "custom", label: "Custom (Silero VAD Plugin)" }
+  { value: "silero", label: "Silero VAD Plugin" }
 ];
 
 export const SettingsPanel: React.FC = () => {
@@ -95,6 +95,27 @@ export const SettingsPanel: React.FC = () => {
               Performance & Pipeline
             </h3>
             
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:items-center">
+              <div>
+                <label className="text-sm font-medium text-gray-300">Voice Activity Detection Engine</label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Filter out silence. {useBatch && "(Required for Batch Processing)"}
+                </p>
+              </div>
+              <div className="md:col-span-2">
+                <Select 
+                  options={useBatch ? VAD_ENGINE_OPTIONS.filter(o => o.value !== 'off') : VAD_ENGINE_OPTIONS} 
+                  value={vadEngine} 
+                  onChange={async (val) => {
+                    setVadEngine(val);
+                    await emit("setting-changed", { key: "vadEngine", value: val });
+                  }} 
+                />
+              </div>
+            </div>
+
+            <div className="h-px bg-white/5 w-full my-6"></div>
+
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-gray-300">Use Batch Processing</label>
@@ -115,27 +136,6 @@ export const SettingsPanel: React.FC = () => {
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${useBatch ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
-            </div>
-
-            <div className="h-px bg-white/5 w-full my-6"></div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:items-center">
-              <div>
-                <label className="text-sm font-medium text-gray-300">Voice Activity Detection Engine</label>
-                <p className="text-xs text-gray-500 mt-1">
-                  Filter out silence. {useBatch && "(Required for Batch Processing)"}
-                </p>
-              </div>
-              <div className="md:col-span-2">
-                <Select 
-                  options={useBatch ? VAD_ENGINE_OPTIONS.filter(o => o.value !== 'off') : VAD_ENGINE_OPTIONS} 
-                  value={vadEngine} 
-                  onChange={async (val) => {
-                    setVadEngine(val);
-                    await emit("setting-changed", { key: "vadEngine", value: val });
-                  }} 
-                />
-              </div>
             </div>
 
             {useBatch && (

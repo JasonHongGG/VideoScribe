@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use uuid::Uuid;
 use tauri::{AppHandle, Emitter};
 
 use crate::domain::stt_job::{SttJobSnapshot, SttStatus};
@@ -136,7 +137,8 @@ impl SttJobController {
         });
     }
 
-    pub fn start_job(&self, video_path: String, model: String, language: String, use_vad: bool, use_batch: bool, batch_size: u32) -> Result<String, String> {
+    pub fn start_job(&self, video_path: String, model: String, language: String, vad_engine: String, use_batch: bool, batch_size: u32) -> Result<String, String> {
+        let _job_id = Uuid::new_v4().to_string();
         let mut job_lock = self.current_job.lock().unwrap();
         
         if let Some(job) = &*job_lock {
@@ -155,7 +157,7 @@ impl SttJobController {
                 video_path,
                 model,
                 language,
-                use_vad,
+                vad_engine,
                 use_batch,
                 batch_size,
             }

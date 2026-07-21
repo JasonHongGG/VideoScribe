@@ -18,7 +18,7 @@ export class STTService {
         videoPath, 
         modelSize, 
         language: settingsStore.language || "auto",
-        useVad: settingsStore.useVad,
+        vadEngine: settingsStore.vadEngine,
         useBatch: settingsStore.useBatch,
         batchSize: settingsStore.batchSize
       });

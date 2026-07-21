@@ -76,7 +76,7 @@ class CommandRouter:
         
         reporter.report_initial_state(device, compute_type, payload.language)
         
-        vad_engine_enum = VADEngineType(payload.vad_engine) if payload.vad_engine in ["off", "native", "custom"] else VADEngineType.NATIVE
+        vad_engine_enum = VADEngineType(payload.vad_engine) if payload.vad_engine in ["off", "native", "silero"] else VADEngineType.OFF
 
         # Build options
         options = TranscriptionOptions(

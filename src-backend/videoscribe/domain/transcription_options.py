@@ -4,9 +4,8 @@ from enum import Enum
 
 class VADEngineType(Enum):
     OFF = "off"
-    NATIVE = "native" # e.g. FasterWhisper's built-in VAD
-    CUSTOM = "custom" # e.g. Silero VAD or other external chunking
-
+    NATIVE = "native"
+    SILERO = "silero"
 
 @dataclass
 class CuePolicy:

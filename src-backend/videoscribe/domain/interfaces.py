@@ -1,5 +1,5 @@
 from typing import Protocol, Iterator, Tuple, Optional, Any
-from .models import TranscriptionSegment, TranscriptionInfo, AudioWindow, Word
+from .models import TranscriptionSegment, TranscriptionInfo, AudioWindow, Word, VADResult
 from .transcription_options import TranscriptionOptions
 from .cancellation import CancellationToken
 
@@ -9,9 +9,9 @@ class AudioAnalyzer(Protocol):
         ...
 
 class VADAnalyzer(Protocol):
-    def analyze(self, audio_path: str, options: TranscriptionOptions) -> Optional[Iterator[AudioWindow]]:
+    def analyze(self, audio_path: str, options: TranscriptionOptions) -> Optional[VADResult]:
         """
-        Analyze audio and return a sequence of speech segments (AudioWindow).
+        Analyze audio and return VAD result.
         If the implementation delegates VAD to the STT engine natively, it should return None.
         """
         ...

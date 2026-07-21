@@ -6,7 +6,7 @@ pub struct StartPayload {
     pub video_path: String,
     pub model: String,
     pub language: String,
-    pub use_vad: bool,
+    pub vad_engine: String,
     pub use_batch: bool,
     pub batch_size: u32,
 }

@@ -1,6 +1,7 @@
 from typing import Iterator, Optional
+import numpy as np
 from videoscribe.domain.interfaces import VADAnalyzer
-from videoscribe.domain.models import AudioWindow
+from videoscribe.domain.models import AudioWindow, VADResult
 from videoscribe.domain.transcription_options import TranscriptionOptions
 import logging
 
@@ -13,18 +14,18 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-class CustomVADAnalyzer(VADAnalyzer):
+class SileroVADAnalyzer(VADAnalyzer):
     """
     A custom VAD analyzer implementation using Silero VAD (bundled with faster-whisper).
     Processes the audio and returns explicit speech segments.
     """
     
-    def analyze(self, audio_path: str, options: TranscriptionOptions) -> Optional[Iterator[AudioWindow]]:
+    def analyze(self, audio_path: str, options: TranscriptionOptions) -> Optional[VADResult]:
         if not HAS_FASTER_WHISPER:
-            logger.error("faster_whisper is not installed. CustomVADAnalyzer cannot run.")
+            logger.error("faster_whisper is not installed. SileroVADAnalyzer cannot run.")
             return None
             
-        logger.info(f"CustomVADAnalyzer: Running Silero VAD on {audio_path}")
+        logger.info(f"SileroVADAnalyzer: Running Silero VAD on {audio_path}")
         
         # Decode audio to 16kHz mono which Silero VAD requires
         # faster-whisper's decode_audio defaults to 16000Hz sampling rate
@@ -39,13 +40,20 @@ class CustomVADAnalyzer(VADAnalyzer):
         
         speech_chunks = get_speech_timestamps(audio, vad_parameters)
         
-        def generator():
-            for chunk in speech_chunks:
-                # speech_chunks contains dicts with 'start' and 'end' in samples (not seconds)
-                # Wait, faster_whisper.vad.get_speech_timestamps returns dicts with 'start' and 'end' in samples!
-                # Because we decoded at 16000Hz, we convert them to seconds.
-                start_sec = chunk['start'] / 16000.0
-                end_sec = chunk['end'] / 16000.0
-                yield AudioWindow(start=start_sec, end=end_sec)
+        def window_generator():
+            try:
+                for i, segment in enumerate(speech_chunks):
+                    # For silero standard 16000Hz format, timestamps are returned directly in dict
+                    start_sec = segment['start'] / 16000.0
+                    end_sec = segment['end'] / 16000.0
+                    
+                    yield AudioWindow(
+                        audio=np.array([]), # We don't slice the actual audio here, just timestamps
+                        start_time=start_sec,
+                        end_time=end_sec,
+                        is_last=(i == len(speech_chunks) - 1)
+                    )
+            except Exception as e:
+                logger.error(f"Error during VAD iteration: {e}")
                 
-        return generator()
+        return VADResult(windows=list(window_generator()))

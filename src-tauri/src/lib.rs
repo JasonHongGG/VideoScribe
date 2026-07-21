@@ -55,12 +55,13 @@ fn start_stt_job(
     video_path: String,
     model_size: String,
     language: String,
-    use_vad: bool,
+    vad_engine: String,
     use_batch: bool,
     batch_size: u32,
-    manager: State<'_, std::sync::Arc<crate::application::stt_job_controller::SttJobController>>
+    state: State<'_, std::sync::Arc<crate::application::stt_job_controller::SttJobController>>,
 ) -> Result<String, String> {
-    manager.start_job(video_path, model_size, language, use_vad, use_batch, batch_size)
+    let manager = state.inner();
+    manager.start_job(video_path, model_size, language, vad_engine, use_batch, batch_size)
 }
 
 #[tauri::command]
