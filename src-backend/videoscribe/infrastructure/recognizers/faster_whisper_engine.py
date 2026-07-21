@@ -50,7 +50,7 @@ class FasterWhisperEngine(SpeechRecognizer):
                 logger.info(f"External VAD generated {len(vad_result.windows)} chunks.")
                 transcribe_kwargs["vad_filter"] = False
                 transcribe_kwargs["clip_timestamps"] = (
-                    vad_result.to_samples_dict_list() if self._is_batched else vad_result.to_flat_list()
+                    vad_result.to_dict_list() if self._is_batched else vad_result.to_flat_list()
                 )
             else:
                 # Fallback if VAD fails or returns empty
