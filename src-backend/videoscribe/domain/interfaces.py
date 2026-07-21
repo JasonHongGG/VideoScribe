@@ -1,5 +1,6 @@
 from typing import Protocol, Iterator, Tuple, Optional, Any
 from .models import TranscriptionSegment, TranscriptionInfo, AudioWindow, Word
+from .transcription_options import TranscriptionOptions
 from .cancellation import CancellationToken
 
 class AudioAnalyzer(Protocol):
@@ -8,11 +9,11 @@ class AudioAnalyzer(Protocol):
         ...
 
 class SpeechRecognizer(Protocol):
-    def load_model(self, model_size: str, device: str, compute_type: str) -> None:
-        """Load the STT model."""
+    def load_model(self, options: TranscriptionOptions) -> None:
+        """Load the STT model using the provided options."""
         ...
         
-    def transcribe_file(self, audio_path: str, language: str = "auto", cancel_token: Optional['CancellationToken'] = None) -> Tuple[Iterator[Any], Optional[TranscriptionInfo]]:
+    def transcribe_file(self, audio_path: str, options: TranscriptionOptions, cancel_token: Optional['CancellationToken'] = None) -> Tuple[Iterator[Any], Optional[TranscriptionInfo]]:
         """Transcribe an audio file and yield segments."""
         ...
 

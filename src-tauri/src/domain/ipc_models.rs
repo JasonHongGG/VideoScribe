@@ -6,8 +6,9 @@ pub struct StartPayload {
     pub video_path: String,
     pub model: String,
     pub language: String,
-    pub device: String,
-    pub compute_type: String,
+    pub use_vad: bool,
+    pub use_batch: bool,
+    pub batch_size: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

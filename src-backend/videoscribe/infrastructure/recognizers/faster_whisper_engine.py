@@ -1,8 +1,9 @@
 import logging
 from typing import Iterator, Tuple, Optional, Any
-from faster_whisper import WhisperModel
+from faster_whisper import WhisperModel, BatchedInferencePipeline
 from videoscribe.domain.models import AudioWindow, Word, TranscriptionInfo
 from videoscribe.domain.interfaces import SpeechRecognizer
+from videoscribe.domain.transcription_options import TranscriptionOptions
 from videoscribe.domain.cancellation import CancellationToken, CancelledException
 
 logger = logging.getLogger(__name__)
@@ -10,26 +11,54 @@ logger = logging.getLogger(__name__)
 class FasterWhisperEngine(SpeechRecognizer):
     def __init__(self):
         self._model = None
+        self._pipeline = None
+        self._is_batched = False
         
-    def load_model(self, model_size: str, device: str, compute_type: str) -> None:
-        logger.info(f"Loading WhisperModel: {model_size} on {device} ({compute_type})")
-        self._model = WhisperModel(model_size, device=device, compute_type=compute_type)
+    def load_model(self, options: TranscriptionOptions) -> None:
+        compute_type = options.compute_type
+        if (options.device.lower() == "cuda" or options.device.lower() == "auto") and compute_type == "default":
+            logger.info("Upgrading compute_type from 'default' to 'int8_float16' for better GPU performance.")
+            compute_type = "int8_float16"
+
+        logger.info(f"Loading WhisperModel: {options.model_size} on {options.device} ({compute_type})")
+        self._model = WhisperModel(options.model_size, device=options.device, compute_type=compute_type)
         
-    def transcribe_file(self, audio_path: str, language: str = "auto", cancel_token: Optional[CancellationToken] = None) -> Tuple[Iterator[Any], Optional[TranscriptionInfo]]:
+        # Check if we should use BatchedInferencePipeline
+        is_gpu = options.device.lower() in ("cuda", "auto")
+        if is_gpu and options.batch_size > 1:
+            logger.info(f"Initializing BatchedInferencePipeline with batch_size={options.batch_size} and vad_filter={options.vad_filter}.")
+            self._pipeline = BatchedInferencePipeline(model=self._model)
+            self._is_batched = True
+        else:
+            reason = "CPU detected or batching disabled."
+            logger.info(f"{reason} Falling back to standard inference.")
+            self._is_batched = False
+            self._pipeline = None
+            
+    def transcribe_file(self, audio_path: str, options: TranscriptionOptions, cancel_token: Optional[CancellationToken] = None) -> Tuple[Iterator[Any], Optional[TranscriptionInfo]]:
         if not self._model:
             raise RuntimeError("Model not loaded. Call load_model first.")
             
         transcribe_kwargs = {
             "beam_size": 5,
-            "vad_filter": False,
+            "vad_filter": options.vad_filter,
             "word_timestamps": True,
             "condition_on_previous_text": False
         }
         
-        if language != "auto" and language:
-            transcribe_kwargs["language"] = language
+        if options.language != "auto" and options.language:
+            transcribe_kwargs["language"] = options.language
             
-        segments, info = self._model.transcribe(audio_path, **transcribe_kwargs)
+        if options.initial_prompt:
+            transcribe_kwargs["initial_prompt"] = options.initial_prompt
+            
+        if self._is_batched:
+            transcribe_kwargs["batch_size"] = options.batch_size
+            logger.info(f"Starting batched transcription with kwargs: {transcribe_kwargs}")
+            segments, info = self._pipeline.transcribe(audio_path, **transcribe_kwargs)
+        else:
+            logger.info(f"Starting standard transcription with kwargs: {transcribe_kwargs}")
+            segments, info = self._model.transcribe(audio_path, **transcribe_kwargs)
         
         domain_info = TranscriptionInfo(
             language=info.language,

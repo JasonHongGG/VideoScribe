@@ -6,8 +6,9 @@ class StartPayload:
     video_path: str
     model: str = "medium"
     language: str = "auto"
-    device: str = "auto"
-    compute_type: str = "default"
+    use_vad: bool = False
+    use_batch: bool = True
+    batch_size: int = 16
 
 @dataclass
 class IpcCommand:

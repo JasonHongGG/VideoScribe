@@ -65,10 +65,10 @@ export const useSTTJobStore = create<STTJobStore>((set) => ({
 
 // Selectors for derived state
 export const selectIsProcessing = (state: STTJobStore) => 
-  ['starting', 'loading_model', 'transcribing', 'cancelling'].includes(state.status);
+  ['loading_model', 'transcribing'].includes(state.status);
 
 export const selectCanTranslate = (state: STTJobStore) => 
   state.status === 'completed';
 
 export const selectHasError = (state: STTJobStore) =>
-  state.status === 'error' || state.status === 'failed';
+  state.status === 'error';

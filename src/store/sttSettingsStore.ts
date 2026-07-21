@@ -10,6 +10,9 @@ interface STTSettingsStore {
   enableFurigana: boolean;
   enableTranslation: boolean;
   targetLanguage: string;
+  useVad: boolean;
+  useBatch: boolean;
+  batchSize: number;
   subtitlePositionX: number;
   subtitlePositionY: number;
   subtitleSpacing: number;
@@ -25,6 +28,9 @@ interface STTSettingsStore {
   setEnableFurigana: (enable: boolean) => void;
   setEnableTranslation: (enable: boolean) => void;
   setTargetLanguage: (lang: string) => void;
+  setUseVad: (use: boolean) => void;
+  setUseBatch: (use: boolean) => void;
+  setBatchSize: (size: number) => void;
   setSubtitlePositionX: (x: number) => void;
   setSubtitlePositionY: (y: number) => void;
   setSubtitleSpacing: (spacing: number) => void;
@@ -43,6 +49,9 @@ export const useSTTSettingsStore = create<STTSettingsStore>()(
       enableFurigana: false,
       enableTranslation: false,
       targetLanguage: 'zh-TW',
+      useVad: false,
+      useBatch: true,
+      batchSize: 16,
       subtitlePositionX: 50,
       subtitlePositionY: 90,
       subtitleSpacing: 6,
@@ -58,6 +67,9 @@ export const useSTTSettingsStore = create<STTSettingsStore>()(
       setEnableFurigana: (enable) => set({ enableFurigana: enable }),
       setEnableTranslation: (enable) => set({ enableTranslation: enable }),
       setTargetLanguage: (lang) => set({ targetLanguage: lang }),
+      setUseVad: (useVad) => set({ useVad }),
+      setUseBatch: (useBatch) => set({ useBatch }),
+      setBatchSize: (batchSize) => set({ batchSize }),
       setSubtitlePositionX: (x) => set({ subtitlePositionX: x }),
       setSubtitlePositionY: (y) => set({ subtitlePositionY: y }),
       setSubtitleSpacing: (spacing) => set({ subtitleSpacing: spacing }),
@@ -74,6 +86,9 @@ export const useSTTSettingsStore = create<STTSettingsStore>()(
         enableFurigana: state.enableFurigana,
         enableTranslation: state.enableTranslation,
         targetLanguage: state.targetLanguage,
+        useVad: state.useVad,
+        useBatch: state.useBatch,
+        batchSize: state.batchSize,
         subtitlePositionX: state.subtitlePositionX,
         subtitlePositionY: state.subtitlePositionY,
         subtitleSpacing: state.subtitleSpacing,

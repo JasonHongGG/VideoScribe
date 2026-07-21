@@ -46,13 +46,13 @@ export const STTPanel: React.FC = () => {
   };
 
   const renderContent = () => {
-    if (status === "error" || status === "failed") {
+    if (status === "error") {
       return <STTErrorState />;
     }
-    if (status === "idle" || status === "cancelled") {
+    if (status === "idle") {
       return <STTEmptyState />;
     }
-    if (status === "starting" || status === "loading_model" || status === "transcribing" || status === "cancelling") {
+    if (status === "loading_model" || status === "transcribing") {
       return <STTProcessingOverlay progress={progress} />;
     }
     if (status === "completed") {

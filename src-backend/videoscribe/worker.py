@@ -4,6 +4,7 @@ import logging
 import threading
 import queue
 from typing import Dict, Any, Optional
+import torch
 
 # Force UTF-8 for IPC communication on Windows
 if sys.platform == "win32":
@@ -16,6 +17,8 @@ from videoscribe.infrastructure.audio.ffmpeg_analyzer import FFmpegAudioAnalyzer
 from videoscribe.infrastructure.reporters.ipc_reporter import IpcReporter
 from videoscribe.domain.cancellation import CancellationToken
 from videoscribe.domain.ipc_models import IpcCommand, StartPayload
+from videoscribe.domain.transcription_options import TranscriptionOptions
+from videoscribe.domain.prompt_registry import PromptRegistry
 
 logging.basicConfig(
     level=logging.INFO,
@@ -60,7 +63,23 @@ class CommandRouter:
             reporter.report_error("video_path is required")
             return
 
-        reporter.report_initial_state(payload.device, payload.compute_type, payload.language)
+        # Auto-detect optimal device and compute_type
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        compute_type = "int8_float16" if device == "cuda" else "default"
+
+        reporter.report_initial_state(device, compute_type, payload.language)
+        
+        # Build options
+        
+        options = TranscriptionOptions(
+            model_size=payload.model,
+            device=device,
+            compute_type=compute_type,
+            language=payload.language,
+            vad_filter=payload.use_vad,
+            batch_size=payload.batch_size if payload.use_batch else 1, # If not batched, force batch_size=1
+            initial_prompt=PromptRegistry.get_prompt(payload.language)
+        )
         
         self.current_cancel_token = CancellationToken()
         job = TranscriptionJob(self.analyzer, self.recognizer, reporter)
@@ -68,10 +87,7 @@ class CommandRouter:
         try:
             job.run(
                 audio_path=payload.video_path,
-                model_size=payload.model,
-                device=payload.device,
-                compute_type=payload.compute_type,
-                language=payload.language,
+                options=options,
                 cancel_token=self.current_cancel_token
             )
         except Exception as e:

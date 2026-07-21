@@ -136,7 +136,7 @@ impl SttJobController {
         });
     }
 
-    pub fn start_job(&self, video_path: String, model: String, language: String) -> Result<String, String> {
+    pub fn start_job(&self, video_path: String, model: String, language: String, use_vad: bool, use_batch: bool, batch_size: u32) -> Result<String, String> {
         let mut job_lock = self.current_job.lock().unwrap();
         
         if let Some(job) = &*job_lock {
@@ -155,8 +155,9 @@ impl SttJobController {
                 video_path,
                 model,
                 language,
-                device: "auto".to_string(),
-                compute_type: "default".to_string(),
+                use_vad,
+                use_batch,
+                batch_size,
             }
         };
 

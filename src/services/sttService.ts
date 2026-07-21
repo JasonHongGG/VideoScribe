@@ -6,6 +6,7 @@ import { useNotifyStore } from "../store/notifyStore";
 export class STTService {
   static async startSTT(videoPath: string, modelSize: string = "medium") {
     const notifyStore = useNotifyStore.getState();
+    const settingsStore = useSTTSettingsStore.getState();
 
     // Optimistically update frontend state while backend boots
     useSTTJobStore.getState().reset();
@@ -13,7 +14,14 @@ export class STTService {
     notifyStore.show("Starting Speech-to-Text process...", "info");
 
     try {
-      await invoke("start_stt_job", { videoPath, modelSize, language: "auto" });
+      await invoke("start_stt_job", { 
+        videoPath, 
+        modelSize, 
+        language: settingsStore.language || "auto",
+        useVad: settingsStore.useVad,
+        useBatch: settingsStore.useBatch,
+        batchSize: settingsStore.batchSize
+      });
       
       // Explicitly trigger translation if enabled
       if (useSTTSettingsStore.getState().enableTranslation) {
