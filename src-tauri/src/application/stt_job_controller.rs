@@ -5,7 +5,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::domain::stt_job::SttJobContext;
-use crate::domain::project::TaskType;
+use crate::domain::project::{TaskType, TaskStatus};
 use crate::domain::ipc_models::{WorkerCommand, WorkerEvent, WorkerEventData, StartPayload};
 use crate::application::worker_process::WorkerProcess;
 
@@ -60,7 +60,27 @@ impl SttJobController {
                         
                         if let Some(tt) = task_type {
                             match data.status.as_str() {
-                                "completed" => proj.complete_task(tt),
+                                "completed" => {
+                                    proj.complete_task(tt.clone());
+                                    
+                                    // If STT completed, check if we need to start translation automatically
+                                    if tt == TaskType::Stt {
+                                        let needs_translation = proj.tasks.iter().any(|t| t.task_type == TaskType::Translation && t.status == TaskStatus::Pending);
+                                        if needs_translation {
+                                            let dispatcher = Arc::new(crate::infrastructure::tauri_events::TauriEventDispatcher::new(app.clone()));
+                                            let provider = state.translator_provider.clone();
+                                            let project_mutex = state.project.clone();
+                                            
+                                            tauri::async_runtime::spawn(async move {
+                                                if let Err(e) = crate::application::translation_coordinator::TranslationCoordinator::start_translation(
+                                                    project_mutex, provider, dispatcher
+                                                ) {
+                                                    eprintln!("Failed to auto-start translation: {}", e);
+                                                }
+                                            });
+                                        }
+                                    }
+                                },
                                 "error" | "failed" => proj.fail_task(tt, data.error_message.clone().unwrap_or_else(|| "Unknown error".to_string())),
                                 "cancelled" => proj.cancel_pipeline(),
                                 _ => {
@@ -77,6 +97,19 @@ impl SttJobController {
                 }
             }
             WorkerEventData::SegmentBatch(data) => {
+                if let Some(state) = app.try_state::<crate::infrastructure::state::AppState>() {
+                    if let Ok(mut proj) = state.project.lock() {
+                        for cue in &data.cues {
+                            let stt_result = crate::domain::project::STTResult {
+                                start: cue.start_ms as f64 / 1000.0,
+                                end: cue.end_ms as f64 / 1000.0,
+                                text: cue.text.clone(),
+                                translation: None,
+                            };
+                            proj.add_stt_result(stt_result);
+                        }
+                    }
+                }
                 let _ = app.emit("stt_segment_batch", data);
             }
             WorkerEventData::Error(data) => {

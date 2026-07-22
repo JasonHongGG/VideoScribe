@@ -95,12 +95,24 @@ impl ProjectState {
 
     // Pipeline management methods
     pub fn init_pipeline(&mut self, tasks_to_run: Vec<TaskType>) {
+        self.results.clear();
         self.tasks = tasks_to_run.into_iter().map(|task_type| PipelineTask {
             task_type,
             status: TaskStatus::Pending,
             progress: 0.0,
             error_message: None,
         }).collect();
+    }
+    
+    pub fn ensure_task_exists(&mut self, task_type: TaskType) {
+        if !self.tasks.iter().any(|t| t.task_type == task_type) {
+            self.tasks.push(PipelineTask {
+                task_type,
+                status: TaskStatus::Pending,
+                progress: 0.0,
+                error_message: None,
+            });
+        }
     }
 
     pub fn get_task_mut(&mut self, task_type: &TaskType) -> Option<&mut PipelineTask> {

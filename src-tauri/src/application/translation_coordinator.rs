@@ -19,7 +19,7 @@ impl TranslationCoordinator {
             return Err("No STT results to translate".into());
         }
         
-        project.init_pipeline(vec![TaskType::Translation]);
+        project.ensure_task_exists(TaskType::Translation);
         project.update_task_progress(TaskType::Translation, 0.0);
         let _ = dispatcher.emit("app-state-changed", Value::Null);
         

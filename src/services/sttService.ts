@@ -25,12 +25,7 @@ export class STTService {
         enableTranslation: settingsStore.enableTranslation
       });
       
-      // Explicitly trigger translation if enabled
-      if (useSTTSettingsStore.getState().enableTranslation) {
-        import("./translationService").then(({ TranslationService }) => {
-          TranslationService.startTranslation();
-        });
-      }
+
       
     } catch (e: any) {
       console.error(e);
