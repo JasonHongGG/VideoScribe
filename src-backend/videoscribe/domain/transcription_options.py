@@ -33,7 +33,3 @@ class TranscriptionOptions:
     mss_model: str = "model_mel_band_roformer_ep_3005_sdr_11.4360.ckpt"
     initial_prompt: Optional[str] = None
     cue_policy: CuePolicy = field(default_factory=CuePolicy)
-
-    def __post_init__(self):
-        if self.use_batch and self.vad_engine == VADEngineType.OFF:
-            self.vad_engine = VADEngineType.NATIVE

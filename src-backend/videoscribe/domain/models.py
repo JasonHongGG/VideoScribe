@@ -42,10 +42,15 @@ class VADResult:
     def is_empty(self) -> bool:
         return len(self.windows) == 0
 
-    def merge_and_pad(self, padding_sec: float = 2.0, total_duration: Optional[float] = None) -> 'VADResult':
+    def merge_and_pad(
+        self,
+        padding_sec: float = 2.0,
+        total_duration: Optional[float] = None,
+    ) -> 'VADResult':
         """
         Pads each speech window by padding_sec before and after,
         and merges any overlapping or adjacent windows.
+        Does NOT perform 30-second chunk splitting.
         """
         if not self.windows:
             return VADResult(windows=[])
@@ -70,7 +75,6 @@ class VADResult:
             else:
                 prev_start, prev_end = merged_intervals[-1]
                 if cur_start <= prev_end:
-                    # Overlap detected, extend the end time of the previous interval
                     merged_intervals[-1] = (prev_start, max(prev_end, cur_end))
                 else:
                     merged_intervals.append((cur_start, cur_end))
@@ -79,13 +83,58 @@ class VADResult:
         new_windows = [
             AudioWindow(
                 audio=np.array([]),
-                start_time=start,
-                end_time=end,
-                is_last=(i == len(merged_intervals) - 1)
+                start_time=round(start, 3),
+                end_time=round(end, 3),
+                is_last=(i == len(merged_intervals) - 1),
             )
             for i, (start, end) in enumerate(merged_intervals)
         ]
         return VADResult(windows=new_windows)
+
+    def split_long_segments(self, max_chunk_sec: float = 30.0) -> 'VADResult':
+        """
+        Subdivides any window longer than max_chunk_sec into smaller windows.
+        Used specifically for Batch Processing requirements.
+        """
+        if not self.windows:
+            return VADResult(windows=[])
+
+        subdivided_intervals: list[tuple[float, float]] = []
+        for w in self.windows:
+            curr = w.start_time
+            end = w.end_time
+            while curr < end:
+                next_end = min(end, curr + max_chunk_sec)
+                subdivided_intervals.append((round(curr, 3), round(next_end, 3)))
+                curr = next_end
+
+        new_windows = [
+            AudioWindow(
+                audio=np.array([]),
+                start_time=start,
+                end_time=end,
+                is_last=(i == len(subdivided_intervals) - 1),
+            )
+            for i, (start, end) in enumerate(subdivided_intervals)
+        ]
+        return VADResult(windows=new_windows)
+
+    @staticmethod
+    def generate_fixed_chunks(total_duration: float, chunk_sec: float = 30.0) -> list[dict]:
+        """
+        Generates fixed 30-second timestamp chunks across total_duration.
+        Used for Batch Processing when VAD is disabled.
+        """
+        if total_duration <= 0:
+            return [{"start": 0.0, "end": chunk_sec}]
+
+        chunks = []
+        curr = 0.0
+        while curr < total_duration:
+            nxt = min(total_duration, curr + chunk_sec)
+            chunks.append({"start": round(curr, 3), "end": round(nxt, 3)})
+            curr = nxt
+        return chunks
 
     def to_dict_list(self) -> list[dict]:
         """Returns format required by Batched Inference (list of dicts)."""

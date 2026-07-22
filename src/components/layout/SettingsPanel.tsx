@@ -1,5 +1,4 @@
 import { useSTTSettingsStore } from "../../store/sttSettingsStore";
-import { emit } from "@tauri-apps/api/event";
 import { SettingSection } from "../settings/SettingSection";
 import { SettingRow, SettingDivider, SettingGroup } from "../settings/SettingRow";
 import { SettingSelect, SettingToggle, SettingSlider } from "../settings/SettingControls";
@@ -63,27 +62,21 @@ export const SettingsPanel: React.FC = () => {
               <SettingSelect settingKey="language" value={store.language || "auto"} options={LANGUAGE_OPTIONS} setter={store.setLanguage} />
             </SettingRow>
             <SettingDivider />
-            <SettingRow label="Voice Activity Detection (VAD)" description={`Filter out silence. ${store.useBatch ? "(Required for Batch Processing)" : ""}`} layout="grid">
+            <SettingRow label="Voice Activity Detection (VAD)" description="Filter out silence before or during recognition." layout="grid">
               <SettingSelect 
                 settingKey="vadEngine" 
                 value={store.vadEngine} 
-                options={store.useBatch ? VAD_ENGINE_OPTIONS.filter(o => o.value !== 'off') : VAD_ENGINE_OPTIONS} 
+                options={VAD_ENGINE_OPTIONS} 
                 setter={store.setVadEngine} 
               />
             </SettingRow>
             <SettingDivider />
 
-            <SettingRow label="Batch Processing" description="Accelerate transcription via chunking.">
+            <SettingRow label="Batch Processing" description="Accelerate transcription via parallel chunking.">
               <SettingToggle 
                 settingKey="useBatch" 
                 checked={store.useBatch} 
                 setter={store.setUseBatch} 
-                sideEffect={async (newValue) => {
-                  if (newValue && store.vadEngine === 'off') {
-                    store.setVadEngine('native');
-                    await emit("setting-changed", { key: "vadEngine", value: 'native' });
-                  }
-                }}
               />
             </SettingRow>
 

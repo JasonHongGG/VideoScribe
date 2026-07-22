@@ -39,36 +39,61 @@ class FasterWhisperEngine(SpeechRecognizer):
             "vad_parameters": dict(min_silence_duration_ms=500, speech_pad_ms=400)
         }
         
+        # Determine total audio duration for fallback / fixed chunking
+        total_duration = 0.0
+        try:
+            from faster_whisper.audio import decode_audio
+            audio_buf = decode_audio(audio_path, sampling_rate=16000)
+            total_duration = len(audio_buf) / 16000.0
+        except Exception as e:
+            logger.warning(f"Could not calculate audio duration prior to transcription: {e}")
+
         # 1. Ask Factory for external VAD Analyzer
         external_vad = VADFactory.create(options)
-        
-        if external_vad:
-            # 2a. If found, run it and use the rich VADResult to format timestamps
-            logger.info(f"Using external VAD analyzer: {external_vad.__class__.__name__}")
-            vad_result = external_vad.analyze(audio_path, options)
-            if vad_result and not vad_result.is_empty:
-                # Apply 2.0s padding and merge overlapping intervals for continuous audio context
-                vad_result = vad_result.merge_and_pad(padding_sec=2.0)
-                logger.info(f"External VAD generated {len(vad_result.windows)} merged chunks after 2.0s padding.")
-                transcribe_kwargs["vad_filter"] = False
-                transcribe_kwargs["clip_timestamps"] = (
-                    vad_result.to_dict_list() if self._is_batched else vad_result.to_flat_list()
-                )
+        raw_vad_result = external_vad.analyze(audio_path, options) if external_vad else None
+
+        # 2. Outer layer: VAD State / Inner layer: Batch State
+        if raw_vad_result and not raw_vad_result.is_empty:
+            # Outer: VAD ON
+            vad_result = raw_vad_result.merge_and_pad(padding_sec=2.0, total_duration=total_duration)
+            transcribe_kwargs["vad_filter"] = False
+
+            if self._is_batched:
+                # Inner: Batch ON -> Subdivide >30s segments for Batch requirements
+                transcribe_kwargs["batch_size"] = options.batch_size
+                batched_vad_result = vad_result.split_long_segments(max_chunk_sec=30.0)
+                transcribe_kwargs["clip_timestamps"] = batched_vad_result.to_dict_list()
+                logger.info(f"VAD ON with Batch ON: {len(batched_vad_result.windows)} chunks (<=30s each).")
             else:
-                # Fallback if VAD fails or returns empty
-                transcribe_kwargs["vad_filter"] = False
+                # Inner: Batch OFF -> NO 30s splitting! Natural VAD segments.
+                transcribe_kwargs["clip_timestamps"] = vad_result.to_flat_list()
+                logger.info(f"VAD ON with Batch OFF: {len(vad_result.windows)} natural VAD segments (no 30s splitting).")
+
+        elif options.vad_engine == VADEngineType.NATIVE:
+            # Outer: Native VAD
+            transcribe_kwargs["vad_filter"] = True
+            if self._is_batched:
+                transcribe_kwargs["batch_size"] = options.batch_size
+            logger.info("Using Native Whisper VAD filter.")
+
         else:
-            # 2b. If no external VAD is configured, use engine's native logic
-            transcribe_kwargs["vad_filter"] = (options.vad_engine == VADEngineType.NATIVE)
-        
+            # Outer: VAD OFF
+            transcribe_kwargs["vad_filter"] = False
+
+            if self._is_batched:
+                # Inner: Batch ON -> Generate fixed 30s timestamp grid for Batch
+                transcribe_kwargs["batch_size"] = options.batch_size
+                fixed_chunks = vad_result.generate_fixed_chunks(total_duration, chunk_sec=30.0)
+                transcribe_kwargs["clip_timestamps"] = fixed_chunks
+                logger.info(f"VAD OFF with Batch ON: Generated {len(fixed_chunks)} fixed 30s chunks.")
+            else:
+                # Inner: Batch OFF -> NO VAD, NO 30s splitting, standard full-audio transcription
+                logger.info("VAD OFF with Batch OFF: Standard full-audio transcription (no splitting).")
+
         if options.language != "auto" and options.language:
             transcribe_kwargs["language"] = options.language
             
-        # [REMOVED initial_prompt] To prevent prompt hallucination on silent chunks, we completely disable initial_prompt.
-        #if options.initial_prompt:
-        #    transcribe_kwargs["initial_prompt"] = options.initial_prompt            
         if self._is_batched:
-            transcribe_kwargs["batch_size"] = options.batch_size
             logger.info(f"Starting batched transcription with kwargs: {transcribe_kwargs}")
             segments, info = self._pipeline.transcribe(audio_path, **transcribe_kwargs)
         else:
