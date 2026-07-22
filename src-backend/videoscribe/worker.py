@@ -1,4 +1,5 @@
 import sys
+import os
 import json
 import logging
 import threading
@@ -10,6 +11,18 @@ import torch
 if sys.platform == "win32":
     sys.stdin.reconfigure(encoding="utf-8")
     sys.stdout.reconfigure(encoding="utf-8")
+    
+    # Add CUDA 12 DLL paths for ctranslate2 (used by faster-whisper)
+    # PyTorch cu130 does not provide CUDA 12 DLLs, so we must add the ones from nvidia-*-cu12
+    import site
+    import glob
+    for site_pkg in site.getsitepackages():
+        nvidia_bins = glob.glob(os.path.join(site_pkg, "nvidia", "*", "bin"))
+        for bin_dir in nvidia_bins:
+            if os.path.exists(bin_dir):
+                os.add_dll_directory(bin_dir)
+                # Also append to PATH because ctranslate2's C++ core might use standard LoadLibrary
+                os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
 
 from videoscribe.infrastructure.recognizers.faster_whisper_engine import FasterWhisperEngine
 from videoscribe.application.transcription_job import TranscriptionJob
