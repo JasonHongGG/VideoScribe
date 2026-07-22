@@ -5,7 +5,7 @@ from videoscribe.domain.interfaces import AudioAnalyzer, SpeechRecognizer, Progr
 from videoscribe.domain.transcription_options import TranscriptionOptions
 from videoscribe.application.segment_refiner import SegmentRefiner
 from videoscribe.domain.cancellation import CancellationToken, CancelledException
-from videoscribe.infrastructure.audio.mss_factory import MSSFactory
+from videoscribe.infrastructure.audio.mss.factory import MSSFactory
 from videoscribe.domain.transcription_options import MSSEngineType
 
 logger = logging.getLogger(__name__)
