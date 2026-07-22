@@ -49,6 +49,7 @@ export const VideoPlayer: React.FC = () => {
     vocalVolume,
     backgroundVolume
   } = useSTTSettingsStore();
+
   const [currentSubtitle, setCurrentSubtitle] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState<string | null>(null);
   
@@ -57,7 +58,6 @@ export const VideoPlayer: React.FC = () => {
 
   const [furiganaTokens, setFuriganaTokens] = useState<{surface: string, reading?: string}[] | null>(null);
 
-
   // Memoize results to prevent unnecessary scans if results haven't changed
   const memoizedResults = useMemo(() => results, [results]);
 
@@ -65,133 +65,92 @@ export const VideoPlayer: React.FC = () => {
   const vocalsUrl = useMemo(() => vocalsAudioPath ? convertFileSrc(vocalsAudioPath) : null, [vocalsAudioPath]);
   const backgroundUrl = useMemo(() => backgroundAudioPath ? convertFileSrc(backgroundAudioPath) : null, [backgroundAudioPath]);
 
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const vocalGainRef = useRef<GainNode | null>(null);
-  const bgGainRef = useRef<GainNode | null>(null);
-
-  // 0. Initialize Web Audio API pipeline when stems are available
-  useEffect(() => {
-    if (!hasAudioStems) return;
-
-    if (!audioCtxRef.current) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      audioCtxRef.current = new AudioCtx();
-    }
-
-    const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended' && isPlaying) {
-      ctx.resume().catch(console.error);
-    }
-
-    if (vocalsAudioRef.current && !vocalGainRef.current) {
-      try {
-        const source = ctx.createMediaElementSource(vocalsAudioRef.current);
-        const gain = ctx.createGain();
-        source.connect(gain);
-        gain.connect(ctx.destination);
-        vocalGainRef.current = gain;
-      } catch (e) {
-        console.error("Failed to connect vocals media element source", e);
-      }
-    }
-
-    if (backgroundAudioRef.current && !bgGainRef.current) {
-      try {
-        const source = ctx.createMediaElementSource(backgroundAudioRef.current);
-        const gain = ctx.createGain();
-        source.connect(gain);
-        gain.connect(ctx.destination);
-        bgGainRef.current = gain;
-      } catch (e) {
-        console.error("Failed to connect background media element source", e);
-      }
-    }
-  }, [hasAudioStems, vocalsUrl, backgroundUrl]);
-
-  // Handle Mute/Unmute main video element
+  // 1. Handle Mute/Unmute of main video element
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.muted = hasAudioStems;
     }
   }, [hasAudioStems]);
 
-  // Update Gain values dynamically in real-time
-  useEffect(() => {
-    if (vocalGainRef.current) {
-      vocalGainRef.current.gain.value = vocalVolume * volume;
-    }
-    if (bgGainRef.current) {
-      bgGainRef.current.gain.value = backgroundVolume * volume;
-    }
-  }, [vocalVolume, backgroundVolume, volume]);
-
-  // Sync playback state (play/pause) for audio stems
+  // 2. Sync volume to audio stems
   useEffect(() => {
     if (!hasAudioStems) return;
+    const targetVocalVol = Math.max(0, Math.min(1, vocalVolume * volume));
+    const targetBgVol = Math.max(0, Math.min(1, backgroundVolume * volume));
 
-    const playOrPause = (audioEl: HTMLAudioElement | null) => {
-      if (!audioEl) return;
-      if (isPlaying) {
-        audioEl.play().catch(console.error);
-      } else {
-        audioEl.pause();
-      }
-    };
+    if (vocalsAudioRef.current) {
+      vocalsAudioRef.current.volume = targetVocalVol;
+    }
+    if (backgroundAudioRef.current) {
+      backgroundAudioRef.current.volume = targetBgVol;
+    }
+  }, [vocalVolume, backgroundVolume, volume, hasAudioStems]);
 
-    playOrPause(vocalsAudioRef.current);
-    playOrPause(backgroundAudioRef.current);
-  }, [isPlaying, hasAudioStems, vocalsUrl, backgroundUrl]);
-
-  // Sync playback rate and time for audio stems
-  useEffect(() => {
-    if (!hasAudioStems) return;
-    const syncAudio = (audioEl: HTMLAudioElement | null) => {
-      if (!audioEl || !videoRef.current) return;
-      audioEl.playbackRate = playbackRate;
-      if (Math.abs(audioEl.currentTime - videoRef.current.currentTime) > 0.15) {
-        audioEl.currentTime = videoRef.current.currentTime;
-      }
-    };
-
-    syncAudio(vocalsAudioRef.current);
-    syncAudio(backgroundAudioRef.current);
-  }, [currentTime, playbackRate, hasAudioStems]);
-
+  // 3. Sync Play / Pause state across video and stems
   useEffect(() => {
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.play().catch(console.error);
+        if (hasAudioStems) {
+          vocalsAudioRef.current?.play().catch(console.error);
+          backgroundAudioRef.current?.play().catch(console.error);
+        }
       } else {
         videoRef.current.pause();
+        if (hasAudioStems) {
+          vocalsAudioRef.current?.pause();
+          backgroundAudioRef.current?.pause();
+        }
       }
     }
-  }, [isPlaying, videoUrl]);
+  }, [isPlaying, videoUrl, hasAudioStems, vocalsUrl, backgroundUrl]);
 
+  // 4. Sync main video volume when stems are not active
   useEffect(() => {
-    if (videoRef.current) {
+    if (videoRef.current && !hasAudioStems) {
       videoRef.current.volume = volume;
     }
-  }, [volume]);
+  }, [volume, hasAudioStems]);
 
+  // 5. Sync playbackRate across video and stems
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.playbackRate = playbackRate;
     }
-  }, [playbackRate]);
+    if (hasAudioStems) {
+      if (vocalsAudioRef.current) vocalsAudioRef.current.playbackRate = playbackRate;
+      if (backgroundAudioRef.current) backgroundAudioRef.current.playbackRate = playbackRate;
+    }
+  }, [playbackRate, hasAudioStems]);
 
-  // 1. Handle explicit user seeks directly and instantly without latency.
+  // 6. Sync currentTime (seeking & clock drift) across video and stems
+  useEffect(() => {
+    if (!hasAudioStems) return;
+    const syncTime = (audioEl: HTMLAudioElement | null) => {
+      if (audioEl && videoRef.current) {
+        if (Math.abs(audioEl.currentTime - videoRef.current.currentTime) > 0.1) {
+          audioEl.currentTime = videoRef.current.currentTime;
+        }
+      }
+    };
+    syncTime(vocalsAudioRef.current);
+    syncTime(backgroundAudioRef.current);
+  }, [currentTime, hasAudioStems]);
+
+  // Handle explicit user seeks directly and instantly without latency.
   useEffect(() => {
     if (videoRef.current && seekToTime !== null) {
       videoRef.current.currentTime = seekToTime;
+      if (vocalsAudioRef.current) vocalsAudioRef.current.currentTime = seekToTime;
+      if (backgroundAudioRef.current) backgroundAudioRef.current.currentTime = seekToTime;
       setCurrentTime(seekToTime); // Sync UI immediately
       setSeekToTime(null);
     }
   }, [seekToTime]);
 
-  // 2. Update subtitle text. This is purely UI and won't affect video playback.
+  // Update subtitle text. Purely UI.
   useEffect(() => {
     if (memoizedResults.length > 0) {
-      // Opt: A linear scan here is okay for now as results length is usually < 1000
       const activeSubtitle = memoizedResults.find(r => currentTime >= r.start && currentTime <= r.end);
       setCurrentSubtitle(activeSubtitle ? activeSubtitle.text : null);
       setCurrentTranslation(activeSubtitle && activeSubtitle.translation ? activeSubtitle.translation : null);
@@ -201,7 +160,7 @@ export const VideoPlayer: React.FC = () => {
     }
   }, [currentTime, memoizedResults]);
 
-  // 3. Fetch Furigana tokens when subtitle changes
+  // Fetch Furigana tokens when subtitle changes
   useEffect(() => {
     if (!currentSubtitle || language !== "ja" || (!enableFurigana && !enableDictionary)) {
       setFuriganaTokens(null);
@@ -222,7 +181,7 @@ export const VideoPlayer: React.FC = () => {
   const scrubTargetTime = useRef<number | null>(null);
   const scrubAnimationFrame = useRef<number | null>(null);
 
-  // 3. Handle global hotkeys for smooth frame-by-frame scrubbing directly on the DOM
+  // Handle global hotkeys for smooth frame-by-frame scrubbing
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -257,6 +216,8 @@ export const VideoPlayer: React.FC = () => {
         e.preventDefault();
         const newTime = Math.max(0, videoRef.current.currentTime - 1);
         videoRef.current.currentTime = newTime;
+        if (vocalsAudioRef.current) vocalsAudioRef.current.currentTime = newTime;
+        if (backgroundAudioRef.current) backgroundAudioRef.current.currentTime = newTime;
         setCurrentTime(newTime);
         return;
       }
@@ -265,6 +226,8 @@ export const VideoPlayer: React.FC = () => {
         e.preventDefault();
         const newTime = Math.min(state.duration, videoRef.current.currentTime + 1);
         videoRef.current.currentTime = newTime;
+        if (vocalsAudioRef.current) vocalsAudioRef.current.currentTime = newTime;
+        if (backgroundAudioRef.current) backgroundAudioRef.current.currentTime = newTime;
         setCurrentTime(newTime);
         return;
       }
@@ -281,7 +244,6 @@ export const VideoPlayer: React.FC = () => {
         return;
       }
 
-      // We only toggle on keydown once, so we ignore repeat events for 's'
       if ((e.key === 's' || e.key === 'S') && !e.repeat) {
         if (state.playbackRate !== 1) {
           state.setPreviousPlaybackRate(state.playbackRate);
@@ -293,7 +255,6 @@ export const VideoPlayer: React.FC = () => {
       }
 
       if (e.key === ',' || e.key === '<' || e.key === '.' || e.key === '>') {
-        // Automatically pause video when scrubbing frame-by-frame
         if (isPlaying) {
           setIsPlaying(false);
         }
@@ -311,11 +272,14 @@ export const VideoPlayer: React.FC = () => {
         if (scrubAnimationFrame.current === null) {
           scrubAnimationFrame.current = requestAnimationFrame(() => {
             if (videoRef.current && scrubTargetTime.current !== null) {
-              videoRef.current.currentTime = scrubTargetTime.current;
+              const target = scrubTargetTime.current;
+              videoRef.current.currentTime = target;
+              if (vocalsAudioRef.current) vocalsAudioRef.current.currentTime = target;
+              if (backgroundAudioRef.current) backgroundAudioRef.current.currentTime = target;
               
               const now = performance.now();
               if (now - lastSyncTime.current > 100) {
-                setCurrentTime(scrubTargetTime.current);
+                setCurrentTime(target);
                 lastSyncTime.current = now;
               }
             }
@@ -539,4 +503,3 @@ export const VideoPlayer: React.FC = () => {
     </div>
   );
 };
-
