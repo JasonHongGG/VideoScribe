@@ -29,6 +29,7 @@ export const useSTTJobStore = create<STTJobStore>((set) => ({
   
   syncAppState: (state: ProjectState) => set({
     tasks: state.tasks,
+    results: state.results,
     vocalsAudioPath: state.vocals_audio_path || null,
     backgroundAudioPath: state.background_audio_path || null,
   }),
