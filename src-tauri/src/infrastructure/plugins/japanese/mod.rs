@@ -55,24 +55,53 @@ impl JapanesePlugin {
 }
 
 impl DictionaryLookup for JapanesePlugin {
-    fn lookup_word(&self, text: &str) -> Result<LookupResult, String> {
-        let token_info = self.tokenizer.tokenize(text)?;
+    fn lookup_word(&self, text: &str, index: usize) -> Result<Vec<LookupResult>, String> {
+        let chars: Vec<char> = text.chars().collect();
+        if index >= chars.len() {
+            return Err("Index out of bounds".to_string());
+        }
+
+        // Limit the prefix length to something reasonable (e.g. 15 chars)
+        let target_len = std::cmp::min(15, chars.len() - index);
         
-        let target_word = if token_info.base_form == "*" {
-            token_info.token_text.clone()
-        } else {
-            token_info.base_form.clone()
-        };
+        let mut results = Vec::new();
+        let mut seen_base_forms = std::collections::HashSet::new();
 
-        let entries = self.dict_service.query_word(&target_word)?;
+        // Check longest prefix first (Layered approach)
+        for len in (1..=target_len).rev() {
+            let prefix: String = chars[index..index + len].iter().collect();
+            
+            // Tokenize the prefix. We only care about the FIRST token returned, 
+            // as we are building prefixes starting from the hovered character.
+            if let Ok(token_info) = self.tokenizer.tokenize(&prefix) {
+                let target_word = if token_info.base_form == "*" {
+                    token_info.token_text.clone()
+                } else {
+                    token_info.base_form.clone()
+                };
 
-        Ok(LookupResult {
-            original_text: text.to_string(),
-            token: token_info.token_text,
-            base_form: token_info.base_form,
-            reading: token_info.reading,
-            entries,
-        })
+                // Deduplicate by base_form to avoid showing the same entry multiple times
+                if seen_base_forms.contains(&target_word) {
+                    continue;
+                }
+                seen_base_forms.insert(target_word.clone());
+
+                // Query dictionary
+                if let Ok(entries) = self.dict_service.query_word(&target_word) {
+                    if !entries.is_empty() {
+                        results.push(LookupResult {
+                            original_text: prefix,
+                            token: token_info.token_text,
+                            base_form: token_info.base_form,
+                            reading: token_info.reading,
+                            entries,
+                        });
+                    }
+                }
+            }
+        }
+
+        Ok(results)
     }
 }
 

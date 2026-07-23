@@ -72,7 +72,7 @@ export const VideoPlayer: React.FC = () => {
   });
 
   const [activeSubtitle, setActiveSubtitle] = useState<STTResult | null>(null);
-  const [hoverText, setHoverText] = useState<{ text: string; x: number; y: number; startIndex: number } | null>(null);
+  const [hoverText, setHoverText] = useState<{ text: string; fullText?: string; x: number; y: number; startIndex: number; charIndex?: number } | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
 
   // Memoize results to prevent unnecessary scans if results haven't changed

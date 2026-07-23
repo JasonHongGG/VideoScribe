@@ -4,12 +4,12 @@ use crate::infrastructure::state::AppState;
 
 #[tauri::command]
 #[specta::specta]
-pub fn lookup_word(text: String, state: State<'_, AppState>) -> Result<LookupResult, String> {
+pub fn lookup_word(text: String, index: usize, state: State<'_, AppState>) -> Result<Vec<LookupResult>, String> {
     let provider = state.plugin_manager
         .get_service::<dyn DictionaryLookup>("japanese")
         .ok_or_else(|| "Dictionary lookup provider for Japanese not found".to_string())?;
 
-    provider.lookup_word(&text)
+    provider.lookup_word(&text, index)
 }
 
 #[tauri::command]

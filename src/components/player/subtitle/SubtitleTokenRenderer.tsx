@@ -5,9 +5,11 @@ interface SubtitleTokenRendererProps {
   token: RenderableToken;
   context: SubtitleRenderContext;
   index: number;
+  fullText: string;
+  charIndex: number;
 }
 
-export const SubtitleTokenRenderer: React.FC<SubtitleTokenRendererProps> = ({ token, context, index }) => {
+export const SubtitleTokenRenderer: React.FC<SubtitleTokenRendererProps> = ({ token, context, index, fullText, charIndex }) => {
   const hasWordTimings = token.start !== undefined && token.end !== undefined;
   const isKaraokeActive = context.enableKaraokeMode && hasWordTimings;
   const highlightRef = useRef<HTMLSpanElement>(null);
@@ -70,9 +72,11 @@ export const SubtitleTokenRenderer: React.FC<SubtitleTokenRendererProps> = ({ to
       
       context.setHoverText({
         text: token.text,
+        fullText: fullText,
         x: e.clientX,
         y: e.clientY,
-        startIndex: index
+        startIndex: index,
+        charIndex: charIndex
       });
     }
   } : {};

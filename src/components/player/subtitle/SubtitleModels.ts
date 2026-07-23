@@ -47,8 +47,8 @@ export interface SubtitleRenderContext {
   enableKaraokeMode: boolean;
   
   // Interactive states
-  hoverText?: { text: string; x: number; y: number; startIndex: number } | null;
-  setHoverText?: (hover: { text: string; x: number; y: number; startIndex: number } | null) => void;
+  hoverText?: { text: string; fullText?: string; x: number; y: number; startIndex: number; charIndex?: number } | null;
+  setHoverText?: (hover: { text: string; fullText?: string; x: number; y: number; startIndex: number; charIndex?: number } | null) => void;
   hoverTimeoutRef?: React.MutableRefObject<number | null>;
 
   // High-performance KTV rendering hooks

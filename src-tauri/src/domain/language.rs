@@ -59,7 +59,7 @@ pub struct LookupResult {
 }
 
 pub trait DictionaryLookup: Send + Sync {
-    fn lookup_word(&self, text: &str) -> Result<LookupResult, String>;
+    fn lookup_word(&self, text: &str, index: usize) -> Result<Vec<LookupResult>, String>;
 }
 
 pub trait FuriganaProvider: Send + Sync {

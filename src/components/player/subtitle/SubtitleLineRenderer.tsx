@@ -8,10 +8,22 @@ interface SubtitleLineRendererProps {
 }
 
 export const SubtitleLineRenderer: React.FC<SubtitleLineRendererProps> = ({ processedSubtitle, context }) => {
-  // Render each token deterministically
-  const renderedTokens = processedSubtitle.tokens.map((token, idx) => (
-    <SubtitleTokenRenderer key={idx} index={idx} token={token} context={context} />
-  ));
+  // Render each token deterministically, keeping track of global character index
+  let currentCharIndex = 0;
+  const renderedTokens = processedSubtitle.tokens.map((token, idx) => {
+    const charIndex = currentCharIndex;
+    currentCharIndex += token.text.length;
+    return (
+      <SubtitleTokenRenderer 
+        key={idx} 
+        index={idx} 
+        charIndex={charIndex}
+        token={token} 
+        fullText={processedSubtitle.original.text}
+        context={context} 
+      />
+    );
+  });
 
   // Construct the main line layout using CSS Grid for perfect Dual-Layer overlap
   const hasFurigana = context.enableFurigana && processedSubtitle.furigana && processedSubtitle.furigana.length > 0;
