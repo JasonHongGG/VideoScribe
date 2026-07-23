@@ -105,6 +105,7 @@ impl SttJobController {
                                 end: cue.end_ms as f64 / 1000.0,
                                 text: cue.text.clone(),
                                 translation: None,
+                                words: cue.words.clone(),
                             };
                             proj.add_stt_result(stt_result);
                         }

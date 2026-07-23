@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use specta::Type;
 
+use crate::domain::stt_job::WordTiming;
+
 #[derive(Debug, Serialize, Deserialize, Clone, TS, Type)]
 #[ts(export, export_to = "../../src/types/app_types.ts")]
 pub struct STTResult {
@@ -9,6 +11,7 @@ pub struct STTResult {
     pub end: f64,
     pub text: String,
     pub translation: Option<String>,
+    pub words: Option<Vec<WordTiming>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, TS, Type, PartialEq)]

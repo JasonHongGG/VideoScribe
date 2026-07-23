@@ -1,4 +1,14 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, TS)]
+#[ts(export, export_to = "../../src/types/app_types.ts")]
+pub struct WordTiming {
+    pub text: String,
+    pub start: f64,
+    pub end: f64,
+    pub probability: f64,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 pub struct SttCue {
@@ -7,6 +17,7 @@ pub struct SttCue {
     pub start_ms: i32,
     pub end_ms: i32,
     pub text: String,
+    pub words: Option<Vec<WordTiming>>,
 }
 
 #[derive(Debug, Clone)]

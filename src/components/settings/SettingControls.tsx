@@ -22,11 +22,12 @@ export interface SettingToggleProps {
   checked: boolean;
   setter: (val: boolean) => void;
   sideEffect?: (val: boolean) => void;
+  disabled?: boolean;
 }
 
-export const SettingToggle: React.FC<SettingToggleProps> = ({ settingKey, checked, setter, sideEffect }) => {
+export const SettingToggle: React.FC<SettingToggleProps> = ({ settingKey, checked, setter, sideEffect, disabled }) => {
   const handleChange = useSettingChange<boolean>();
-  return <Toggle checked={checked} onChange={(val) => handleChange(settingKey, val, setter, sideEffect)} />;
+  return <Toggle checked={checked} disabled={disabled} onChange={(val) => handleChange(settingKey, val, setter, sideEffect)} />;
 };
 
 export interface SettingSliderProps {

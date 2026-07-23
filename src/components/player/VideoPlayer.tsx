@@ -6,9 +6,16 @@ import { useAudioMixer } from "./useAudioMixer";
 import { VideoControls } from "./VideoControls";
 import { AnimatePresence, motion } from "framer-motion";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { invoke } from "@tauri-apps/api/core";
+
 import { DictionaryTooltip } from "../stt/DictionaryTooltip";
 import { VideoEmptyState } from "./VideoEmptyState";
+import { SubtitleRenderer } from "./subtitle/SubtitleRenderer";
+import { KaraokePlugin } from "./subtitle/plugins/KaraokePlugin";
+import { FuriganaPlugin } from "./subtitle/plugins/FuriganaPlugin";
+import { DictionaryPlugin } from "./subtitle/plugins/DictionaryPlugin";
+import { TranslationPlugin } from "./subtitle/plugins/TranslationPlugin";
+import { SubtitlePluginContext } from "./subtitle/plugin_types";
+import { STTResult } from "../../types/bindings";
 
 export const VideoPlayer: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -47,6 +54,7 @@ export const VideoPlayer: React.FC = () => {
     sttFontSize,
     translationFontSize,
     enableFurigana,
+    enableKaraokeMode,
     vocalVolume,
     backgroundVolume
   } = useSTTSettingsStore();
@@ -67,13 +75,9 @@ export const VideoPlayer: React.FC = () => {
     playbackRate,
   });
 
-  const [currentSubtitle, setCurrentSubtitle] = useState<string | null>(null);
-  const [currentTranslation, setCurrentTranslation] = useState<string | null>(null);
-  
+  const [activeSubtitle, setActiveSubtitle] = useState<STTResult | null>(null);
   const [hoverText, setHoverText] = useState<{ text: string; x: number; y: number; startIndex: number } | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
-
-  const [furiganaTokens, setFuriganaTokens] = useState<{surface: string, reading?: string}[] | null>(null);
 
   // Memoize results to prevent unnecessary scans if results haven't changed
   const memoizedResults = useMemo(() => results, [results]);
@@ -92,31 +96,40 @@ export const VideoPlayer: React.FC = () => {
   // Update subtitle text. Purely UI.
   useEffect(() => {
     if (memoizedResults.length > 0) {
-      const activeSubtitle = memoizedResults.find(r => currentTime >= (r.start ?? 0) && currentTime <= (r.end ?? 0));
-      setCurrentSubtitle(activeSubtitle ? activeSubtitle.text : null);
-      setCurrentTranslation(activeSubtitle && activeSubtitle.translation ? activeSubtitle.translation : null);
+      const active = memoizedResults.find(r => currentTime >= (r.start ?? 0) && currentTime <= (r.end ?? 0));
+      setActiveSubtitle(active || null);
     } else {
-      setCurrentSubtitle(null);
-      setCurrentTranslation(null);
+      setActiveSubtitle(null);
     }
   }, [currentTime, memoizedResults]);
 
-  // Fetch Furigana tokens when subtitle changes
-  useEffect(() => {
-    if (!currentSubtitle || language !== "ja" || (!enableFurigana && !enableDictionary)) {
-      setFuriganaTokens(null);
-      return;
-    }
+  const pluginContext = useMemo<SubtitlePluginContext | null>(() => {
+    if (!activeSubtitle) return null;
+    return {
+      subtitle: activeSubtitle,
+      currentTime,
+      language: language || "auto",
+      sttFontSize,
+      translationFontSize,
+      subtitleSpacing,
+      enableFurigana,
+      enableDictionary,
+      enableKaraokeMode,
+      hoverText,
+      setHoverText,
+      hoverTimeoutRef
+    };
+  }, [
+    activeSubtitle, currentTime, language, sttFontSize, translationFontSize, 
+    subtitleSpacing, enableFurigana, enableDictionary, enableKaraokeMode, hoverText
+  ]);
 
-    let active = true;
-    invoke<{surface: string, reading?: string}[]>("get_furigana", { text: currentSubtitle })
-      .then(tokens => {
-        if (active) setFuriganaTokens(tokens);
-      })
-      .catch(console.error);
-
-    return () => { active = false; };
-  }, [currentSubtitle, language, enableFurigana, enableDictionary]);
+  const plugins = useMemo(() => [
+    KaraokePlugin,
+    FuriganaPlugin,
+    DictionaryPlugin,
+    TranslationPlugin
+  ], []);
 
   const lastSyncTime = useRef(0);
   const scrubTargetTime = useRef<number | null>(null);
@@ -299,7 +312,7 @@ export const VideoPlayer: React.FC = () => {
             )}
             
             <AnimatePresence>
-              {showSubtitles && currentSubtitle && (
+              {showSubtitles && activeSubtitle && (
                 <div
                   className="absolute pointer-events-none z-30"
                   style={{ 
@@ -325,98 +338,14 @@ export const VideoPlayer: React.FC = () => {
                     }}
                   >
                     <div 
-                      className="flex flex-col items-center"
-                      style={{ gap: `${subtitleSpacing ?? 6}px` }}
+                      className="flex flex-col items-center w-full"
                     >
-                      <p 
-                        className="text-white font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-center leading-relaxed tracking-wide flex flex-wrap justify-center items-end"
-                        style={{ fontSize: `${sttFontSize ?? 20}px` }}
-                      >
-                        {language === "ja" && furiganaTokens ? (
-                          (() => {
-                            let charIndex = 0;
-                            return furiganaTokens.map((token, tokenIdx) => {
-                              const startIdx = charIndex;
-                              charIndex += token.surface.length;
-
-                              return (
-                                <ruby key={tokenIdx} className="group/ruby leading-none" style={{ rubyPosition: "over" }}>
-                                  <span className="inline-flex">
-                                    {Array.from(token.surface).map((char, charOffset) => {
-                                      const absoluteIdx = startIdx + charOffset;
-                                      return (
-                                        <span
-                                          key={charOffset}
-                                          className={`rounded px-px cursor-pointer transition-colors ${
-                                            enableDictionary ? (
-                                              hoverText?.startIndex === absoluteIdx 
-                                                ? "text-yellow-400 bg-yellow-500/20" 
-                                                : "hover:text-yellow-400 hover:bg-white/10"
-                                            ) : ""
-                                          }`}
-                                          onMouseEnter={(e) => {
-                                            if (!enableDictionary) return;
-                                            if (hoverTimeoutRef.current) window.clearTimeout(hoverTimeoutRef.current);
-                                            const textToLookup = Array.from(currentSubtitle).slice(absoluteIdx, absoluteIdx + 15).join('');
-                                            setHoverText({
-                                              text: textToLookup,
-                                              x: e.clientX,
-                                              y: e.clientY,
-                                              startIndex: absoluteIdx
-                                            });
-                                          }}
-                                        >
-                                          {char}
-                                        </span>
-                                      );
-                                    })}
-                                  </span>
-                                  {enableFurigana && token.reading ? (
-                                    <rt className="text-[#facc15] font-semibold tracking-widest text-center pointer-events-none pb-1 select-none" style={{ fontSize: `${(sttFontSize ?? 20) * 0.45}px` }}>
-                                      {token.reading}
-                                    </rt>
-                                  ) : (
-                                    <rt className="pointer-events-none select-none pb-1" style={{ fontSize: `${(sttFontSize ?? 20) * 0.45}px` }}></rt>
-                                  )}
-                                </ruby>
-                              );
-                            });
-                          })()
-                        ) : language === "ja" && enableDictionary ? (
-                          Array.from(currentSubtitle).map((char, i) => (
-                            <span
-                              key={i}
-                              className={`rounded px-px cursor-pointer transition-colors ${
-                                hoverText?.startIndex === i 
-                                  ? "text-yellow-400 bg-yellow-500/20" 
-                                  : "hover:text-yellow-400 hover:bg-white/10"
-                              }`}
-                              onMouseEnter={(e) => {
-                                if (hoverTimeoutRef.current) window.clearTimeout(hoverTimeoutRef.current);
-                                const textToLookup = Array.from(currentSubtitle).slice(i, i + 15).join('');
-                                setHoverText({
-                                  text: textToLookup,
-                                  x: e.clientX,
-                                  y: e.clientY,
-                                  startIndex: i
-                                });
-                              }}
-                            >
-                              {char}
-                            </span>
-                          ))
-                        ) : (
-                          currentSubtitle
-                        )}
-                      </p>
-                      
-                      {currentTranslation && (
-                        <p 
-                          className="text-[#facc15] font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-center leading-relaxed tracking-wide"
-                          style={{ fontSize: `${translationFontSize ?? 18}px` }}
-                        >
-                          {currentTranslation}
-                        </p>
+                      {pluginContext && (
+                        <SubtitleRenderer 
+                          subtitle={activeSubtitle}
+                          context={pluginContext}
+                          plugins={plugins}
+                        />
                       )}
                     </div>
                   </div>

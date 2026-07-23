@@ -4,8 +4,10 @@ export type PipelineTask = { task_type: TaskType, status: TaskStatus, progress: 
 
 export type ProjectState = { video_path: string | null, tasks: Array<PipelineTask>, results: Array<STTResult>, target_language: string, vocals_audio_path: string | null, background_audio_path: string | null, };
 
-export type STTResult = { start: number, end: number, text: string, translation: string | null, };
+export type STTResult = { start: number, end: number, text: string, translation: string | null, words: Array<WordTiming> | null, };
 
 export type TaskStatus = "pending" | "running" | "completed" | "error" | "cancelled";
 
 export type TaskType = "mss" | "vad" | "stt" | "translation";
+
+export type WordTiming = { text: string, start: number, end: number, probability: number, };

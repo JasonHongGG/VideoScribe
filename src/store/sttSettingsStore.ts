@@ -9,6 +9,7 @@ interface STTSettingsStore {
   enableDictionary: boolean;
   enableFurigana: boolean;
   enableTranslation: boolean;
+  enableKaraokeMode: boolean;
   targetLanguage: string;
   vadEngine: string;
   mssEngine: string;
@@ -31,6 +32,7 @@ interface STTSettingsStore {
   setEnableDictionary: (enable: boolean) => void;
   setEnableFurigana: (enable: boolean) => void;
   setEnableTranslation: (enable: boolean) => void;
+  setEnableKaraokeMode: (enable: boolean) => void;
   setTargetLanguage: (lang: string) => void;
   setVadEngine: (engine: string) => void;
   setMssEngine: (engine: string) => void;
@@ -56,6 +58,7 @@ export const useSTTSettingsStore = create<STTSettingsStore>()(
       enableDictionary: false,
       enableFurigana: false,
       enableTranslation: false,
+      enableKaraokeMode: false,
       targetLanguage: 'zh-TW',
       vadEngine: 'off',
       mssEngine: 'off',
@@ -78,6 +81,7 @@ export const useSTTSettingsStore = create<STTSettingsStore>()(
       setEnableDictionary: (enable) => set({ enableDictionary: enable }),
       setEnableFurigana: (enable) => set({ enableFurigana: enable }),
       setEnableTranslation: (enable) => set({ enableTranslation: enable }),
+      setEnableKaraokeMode: (enable) => set({ enableKaraokeMode: enable }),
       setTargetLanguage: (lang) => set({ targetLanguage: lang }),
       setVadEngine: (engine) => set({ vadEngine: engine }),
       setMssEngine: (engine) => set({ mssEngine: engine }),
@@ -101,6 +105,7 @@ export const useSTTSettingsStore = create<STTSettingsStore>()(
         enableDictionary: state.enableDictionary,
         enableFurigana: state.enableFurigana,
         enableTranslation: state.enableTranslation,
+        enableKaraokeMode: state.enableKaraokeMode,
         targetLanguage: state.targetLanguage,
         vadEngine: state.vadEngine,
         mssEngine: state.mssEngine,

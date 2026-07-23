@@ -59,11 +59,19 @@ export type STTResult = {
 	end: number | null,
 	text: string,
 	translation: string | null,
+	words: WordTiming[] | null,
 };
 
 export type TaskStatus = "pending" | "running" | "completed" | "error" | "cancelled";
 
-export type TaskType = "extract_audio" | "mss" | "vad" | "stt" | "translation";
+export type TaskType = "mss" | "vad" | "stt" | "translation";
+
+export type WordTiming = {
+	text: string,
+	start: number | null,
+	end: number | null,
+	probability: number | null,
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
