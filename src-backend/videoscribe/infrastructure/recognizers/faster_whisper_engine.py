@@ -36,7 +36,7 @@ class FasterWhisperEngine(SpeechRecognizer):
         transcribe_kwargs = {
             "beam_size": 5,
             "word_timestamps": True,
-            "condition_on_previous_text": True,
+            "condition_on_previous_text": False,
             "vad_parameters": dict(min_silence_duration_ms=500, speech_pad_ms=400)
         }
         

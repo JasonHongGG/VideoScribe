@@ -84,8 +84,9 @@ class CommandRouter:
         is_gpu = torch.cuda.is_available()
         device = "cuda" if is_gpu else "cpu"
         
-        # FasterWhisper CPU recommends int8. GPU uses int8_float16.
-        compute_type = "int8_float16" if is_gpu else "int8"
+        # FasterWhisper CPU recommends int8. GPU must use float16 for large-v3 accuracy.
+        # int8_float16 severely degrades large-v3 performance causing dropped words/sentences.
+        compute_type = "float16" if is_gpu else "int8"
         
         # Orchestrator Decisions: Batching
         use_batch = payload.use_batch and is_gpu
