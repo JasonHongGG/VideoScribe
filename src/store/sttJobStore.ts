@@ -48,8 +48,9 @@ export const selectIsProcessing = (state: STTJobStore) => {
 };
 
 export const selectCanTranslate = (state: STTJobStore) => {
-  const sttTask = state.tasks.find(t => t.task_type === 'stt');
-  return sttTask?.status === 'completed';
+  if (state.results.length === 0) return false;
+  const isProcessing = state.tasks.some(t => t.status === 'running' || t.status === 'pending');
+  return !isProcessing;
 };
 
 export const selectHasError = (state: STTJobStore) => {
